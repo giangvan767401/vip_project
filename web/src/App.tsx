@@ -5,6 +5,8 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { StudentDashboardPage } from './pages/StudentDashboardPage';
+import { CheckInPage } from './pages/CheckInPage';
+import { JournalPage } from './pages/JournalPage';
 import { CounselorDashboardPage } from './pages/CounselorDashboardPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
@@ -39,6 +41,22 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute allowedRoles={['USER']}>
                 <StudentDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/checkin"
+            element={
+              <ProtectedRoute allowedRoles={['USER']}>
+                <CheckInPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/journal"
+            element={
+              <ProtectedRoute allowedRoles={['USER']}>
+                <JournalPage />
               </ProtectedRoute>
             }
           />

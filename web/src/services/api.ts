@@ -1,4 +1,6 @@
 import { AuthResponse, User } from '../types/auth';
+import { CreateEmotionLogPayload, EmotionLog } from '../types/emotion';
+import { CreateJournalEntryInput, JournalEntry, UpdateJournalEntryInput } from '../types/journal';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -47,6 +49,57 @@ class ApiClient {
       headers: this.getHeaders(),
     });
     return this.handleResponse<User>(res);
+  }
+
+  async createEmotionLog(body: CreateEmotionLogPayload): Promise<EmotionLog> {
+    const res = await fetch(`${API_BASE_URL}/emotion-logs`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(body),
+    });
+    return this.handleResponse<EmotionLog>(res);
+  }
+
+  async getEmotionLogs(): Promise<EmotionLog[]> {
+    const res = await fetch(`${API_BASE_URL}/emotion-logs`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<EmotionLog[]>(res);
+  }
+
+  async getJournalEntries(): Promise<JournalEntry[]> {
+    const res = await fetch(`${API_BASE_URL}/journal-entries`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<JournalEntry[]>(res);
+  }
+
+  async createJournalEntry(body: CreateJournalEntryInput): Promise<JournalEntry> {
+    const res = await fetch(`${API_BASE_URL}/journal-entries`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(body),
+    });
+    return this.handleResponse<JournalEntry>(res);
+  }
+
+  async updateJournalEntry(id: string, body: UpdateJournalEntryInput): Promise<JournalEntry> {
+    const res = await fetch(`${API_BASE_URL}/journal-entries/${id}`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+      body: JSON.stringify(body),
+    });
+    return this.handleResponse<JournalEntry>(res);
+  }
+
+  async deleteJournalEntry(id: string): Promise<{ message: string }> {
+    const res = await fetch(`${API_BASE_URL}/journal-entries/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<{ message: string }>(res);
   }
 }
 

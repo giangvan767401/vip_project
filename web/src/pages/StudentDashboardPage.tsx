@@ -1,7 +1,8 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { RoleLayout } from '../components/layout/RoleLayout';
-import { Camera, BookOpen, TrendingUp } from 'lucide-react';
+import { Camera, BookOpen, TrendingUp, ArrowRight } from 'lucide-react';
 
 export const StudentDashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -25,45 +26,53 @@ export const StudentDashboardPage: React.FC = () => {
 
         {/* Quick Action Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-          <div className="glass-card" style={{ padding: '24px' }}>
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '12px',
-              background: 'rgba(6, 182, 212, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '16px',
-            }}>
-              <Camera size={24} color="#06b6d4" />
+          <Link to="/student/checkin" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <div className="glass-card" style={{ padding: '24px', cursor: 'pointer', height: '100%' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '12px',
+                background: 'rgba(6, 182, 212, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '16px',
+              }}>
+                <Camera size={24} color="#06b6d4" />
+              </div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '8px' }}>Check-in Webcam</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '16px' }}>
+                Bật webcam để hệ thống nhận diện cảm xúc theo thời gian thực và ghi nhận dữ liệu.
+              </p>
+              <span style={{ fontSize: '0.85rem', color: '#06b6d4', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                Bắt đầu check-in ngay <ArrowRight size={14} />
+              </span>
             </div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '8px' }}>Check-in Webcam</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '16px' }}>
-              Bật webcam để hệ thống nhận diện cảm xúc theo thời gian thực (chuẩn bị ở Module 4).
-            </p>
-            <span style={{ fontSize: '0.85rem', color: '#06b6d4', fontWeight: 600 }}>Sẵn sàng kết nối WebSocket AI</span>
-          </div>
+          </Link>
 
-          <div className="glass-card" style={{ padding: '24px' }}>
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '12px',
-              background: 'rgba(168, 85, 247, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '16px',
-            }}>
-              <BookOpen size={24} color="#a855f7" />
+          <Link to="/student/journal" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <div className="glass-card" style={{ padding: '24px', cursor: 'pointer', height: '100%' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '12px',
+                background: 'rgba(168, 85, 247, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '16px',
+              }}>
+                <BookOpen size={24} color="#a855f7" />
+              </div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '8px' }}>Nhật ký cảm xúc</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '16px' }}>
+                Ghi lại những suy nghĩ, câu chuyện và tâm trạng diễn ra trong ngày của bạn.
+              </p>
+              <span style={{ fontSize: '0.85rem', color: '#a855f7', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                Viết nhật ký ngay <ArrowRight size={14} />
+              </span>
             </div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '8px' }}>Nhật ký cảm xúc</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '16px' }}>
-              Ghi lại những suy nghĩ, câu chuyện và tâm trạng diễn ra trong ngày của bạn.
-            </p>
-            <span style={{ fontSize: '0.85rem', color: '#a855f7', fontWeight: 600 }}>Bảo mật dữ liệu cá nhân</span>
-          </div>
+          </Link>
 
           <div className="glass-card" style={{ padding: '24px' }}>
             <div style={{

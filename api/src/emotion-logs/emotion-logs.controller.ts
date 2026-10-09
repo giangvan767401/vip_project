@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { EmotionLogsService } from './emotion-logs.service';
 import { CreateEmotionLogDto } from './dto/create-emotion-log.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -19,6 +19,15 @@ export class EmotionLogsController {
     @Body() dto: CreateEmotionLogDto,
   ) {
     return this.emotionLogsService.create(userId, dto);
+  }
+
+  @Get('summary')
+  @Roles(Role.USER)
+  async getSummary(
+    @CurrentUser('userId') userId: string,
+    @Query('range') range?: 'day' | 'week',
+  ) {
+    return this.emotionLogsService.getSummary(userId, range ?? 'week');
   }
 
   @Get()

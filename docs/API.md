@@ -157,6 +157,65 @@ Tài liệu hợp đồng API giữa Client (Frontend Web/AI Service) và Server
 - **Truy cập**: Cần Bearer Token, Role: `USER`
 - **Response `200 OK`**: Danh sách mảng các `EmotionLog` sắp xếp giảm dần theo thời gian tạo.
 
+#### C. Lấy dữ liệu tổng hợp thống kê cảm xúc (Dashboard)
+- **Method**: `GET`
+- **Endpoint**: `/emotion-logs/summary?range=day|week`
+- **Truy cập**: Cần Bearer Token, Role: `USER`
+- **Query Params**:
+  - `range` (tùy chọn): `'week'` (mặc định) hoặc `'day'`
+- **Response `200 OK`**:
+  ```json
+  {
+    "range": "week",
+    "summary": {
+      "avgPositiveScore": 59.1,
+      "avgNegativeScore": 29.2,
+      "totalCheckIns": 9,
+      "dominantEmotion": "Happy"
+    },
+    "trend": [
+      {
+        "label": "03/10",
+        "date": "2026-10-03",
+        "avgPositive": 14.0,
+        "avgNegative": 75.0,
+        "dominantEmotion": "Sad",
+        "count": 1
+      }
+    ],
+    "distribution": [
+      { "emotion": "Happy", "count": 5, "percentage": 55.6 },
+      { "emotion": "Neutral", "count": 2, "percentage": 22.2 }
+    ],
+    "comparison": {
+      "thisWeek": {
+        "avgPositiveScore": 59.1,
+        "avgNegativeScore": 29.2,
+        "totalCheckIns": 9,
+        "dominantEmotion": "Happy"
+      },
+      "previousWeek": {
+        "avgPositiveScore": 36.7,
+        "avgNegativeScore": 49.9,
+        "totalCheckIns": 10,
+        "dominantEmotion": "Sad"
+      },
+      "positiveDiff": 22.4,
+      "negativeDiff": -20.7,
+      "byDay": [
+        {
+          "dayName": "CN",
+          "dateLabel": "03/10",
+          "thisWeekPositive": 70.0,
+          "lastWeekPositive": 15.0,
+          "thisWeekNegative": 15.0,
+          "lastWeekNegative": 78.0
+        }
+      ]
+    }
+  }
+  ```
+
 ---
 
 ### 2.6. Nhật ký cá nhân (`/journal-entries`)
@@ -211,6 +270,45 @@ Tài liệu hợp đồng API giữa Client (Frontend Web/AI Service) và Server
 - **Endpoint**: `/journal-entries/:id`
 - **Truy cập**: Cần Bearer Token, Role: `USER` (chỉ xóa được bản ghi của chính mình)
 - **Response `200 OK`**: `{"message": "Đã xóa bản ghi nhật ký thành công"}`.
+
+---
+
+### 2.7. Cảnh báo tâm lý (`/alerts`)
+
+#### A. Lấy mức cảnh báo hiện tại của người dùng
+- **Method**: `GET`
+- **Endpoint**: `/alerts/me`
+- **Truy cập**: Cần Bearer Token, Role: `USER`
+- **Response `200 OK`**:
+  ```json
+  {
+    "level": "vua",
+    "totalNegativeDays": 5,
+    "consecutiveNegativeDays": 5,
+    "timeWindowDays": 7,
+    "thresholdApplied": 50,
+    "activeRuleName": "Cảnh báo mức vừa (≥4/7 ngày tiêu cực)",
+    "message": "MindLog ghi nhận bạn đã trải qua 5 ngày liên tiếp có điểm tiêu cực vượt ngưỡng trong tuần qua.",
+    "recommendation": "Bạn có thể đang chịu áp lực học tập hoặc stress. Hãy dành thời gian thư giãn với bài tập thở 4-7-8, viết nhật ký chia sẻ và cho phép bản thân nghỉ ngơi.",
+    "disclaimer": "Cảnh báo và gợi ý được tính tự động từ tần suất cảm xúc ghi nhận, không thay thế cho chẩn đoán y tế hoặc đánh giá tâm thần chuyên nghiệp.",
+    "details": [
+      { "date": "2026-10-03", "label": "04/10", "avgNegative": 85.0, "isNegative": true }
+    ]
+  }
+  ```
+  *(Các mức `level` hợp lệ: `"binh_thuong"`, `"nhe"`, `"vua"`, `"keo_dai"`)*
+
+---
+
+### 2.8. Tài nguyên & Gợi ý hỗ trợ (`/resources`)
+
+#### A. Lấy danh sách tài liệu, bài tập và đường dây nóng
+- **Method**: `GET`
+- **Endpoint**: `/resources?level=all|nhe|vua|keo_dai`
+- **Truy cập**: Cần Bearer Token
+- **Query Params**:
+  - `level` (tùy chọn): mức lọc (`all`, `nhe`, `vua`, `keo_dai`)
+- **Response `200 OK`**: Danh sách mảng các `Resource` (loại `EXERCISE`, `ARTICLE`, `HOTLINE`).
 
 ---
 

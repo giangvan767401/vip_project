@@ -7,6 +7,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { StudentDashboardPage } from './pages/StudentDashboardPage';
 import { CheckInPage } from './pages/CheckInPage';
 import { JournalPage } from './pages/JournalPage';
+import { BreathingExercisePage } from './pages/BreathingExercisePage';
 import { CounselorDashboardPage } from './pages/CounselorDashboardPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
@@ -57,6 +58,14 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute allowedRoles={['USER']}>
                 <JournalPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/breathing"
+            element={
+              <ProtectedRoute allowedRoles={['USER']}>
+                <BreathingExercisePage />
               </ProtectedRoute>
             }
           />

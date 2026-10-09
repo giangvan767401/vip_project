@@ -68,6 +68,14 @@ class ApiClient {
     return this.handleResponse<EmotionLog[]>(res);
   }
 
+  async getEmotionSummary(range: 'day' | 'week' = 'week'): Promise<import('../types/emotion').EmotionSummaryData> {
+    const res = await fetch(`${API_BASE_URL}/emotion-logs/summary?range=${range}`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<import('../types/emotion').EmotionSummaryData>(res);
+  }
+
   async getJournalEntries(): Promise<JournalEntry[]> {
     const res = await fetch(`${API_BASE_URL}/journal-entries`, {
       method: 'GET',
@@ -101,6 +109,24 @@ class ApiClient {
     });
     return this.handleResponse<{ message: string }>(res);
   }
+
+  async getAlert(): Promise<import('../types/alert').UserAlert> {
+    const res = await fetch(`${API_BASE_URL}/alerts/me`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<import('../types/alert').UserAlert>(res);
+  }
+
+  async getResources(level?: string): Promise<import('../types/resource').ResourceItem[]> {
+    const query = level ? `?level=${encodeURIComponent(level)}` : '';
+    const res = await fetch(`${API_BASE_URL}/resources${query}`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<import('../types/resource').ResourceItem[]>(res);
+  }
 }
 
 export const api = new ApiClient();
+

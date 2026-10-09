@@ -52,3 +52,57 @@ export interface EmotionLog {
   note?: string | null;
   createdAt: string;
 }
+
+export interface EmotionTrendItem {
+  label: string;
+  date: string;
+  avgPositive: number;
+  avgNegative: number;
+  dominantEmotion: string;
+  count: number;
+}
+
+export interface EmotionDistributionItem {
+  emotion: string;
+  count: number;
+  percentage: number;
+}
+
+export interface EmotionDayComparison {
+  dayName: string;
+  dateLabel: string;
+  thisWeekPositive: number;
+  lastWeekPositive: number;
+  thisWeekNegative: number;
+  lastWeekNegative: number;
+}
+
+export interface EmotionSummaryData {
+  range: 'day' | 'week';
+  summary: {
+    dominantEmotion: string;
+    avgPositiveScore: number;
+    avgNegativeScore: number;
+    totalCheckIns: number;
+  };
+  trend: EmotionTrendItem[];
+  distribution: EmotionDistributionItem[];
+  comparison: {
+    thisWeek: {
+      avgPositiveScore: number;
+      avgNegativeScore: number;
+      totalCheckIns: number;
+      dominantEmotion: string;
+    };
+    previousWeek: {
+      avgPositiveScore: number;
+      avgNegativeScore: number;
+      totalCheckIns: number;
+      dominantEmotion: string;
+    };
+    positiveDiff: number;
+    negativeDiff: number;
+    byDay: EmotionDayComparison[];
+  };
+}
+

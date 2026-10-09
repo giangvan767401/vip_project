@@ -61,3 +61,33 @@ model JournalEntry {
   @@index([date])
   @@map("journal_entries")
 }
+
+model AlertRule {
+  id                String   @id @default(cuid())
+  name              String
+  negativeThreshold Float    @default(50.0)
+  consecutiveDays   Int      @default(4)
+  timeWindowDays    Int      @default(7)
+  level             String   @default("vua") // nhe, vua, keo_dai
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("alert_rules")
+}
+
+model Resource {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?  @db.Text
+  type            String   // EXERCISE, ARTICLE, HOTLINE, TIP
+  level           String   @default("all") // all, nhe, vua, keo_dai
+  content         String?  @db.Text
+  url             String?
+  durationMinutes Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("resources")
+}
+

@@ -8,6 +8,8 @@ Giai đoạn: B – MVP | Cập nhật lần cuối: 2026-10-09
 - [x] Giai đoạn A: docker-compose MySQL, `.env.example`, CORS; `api/` NestJS + Prisma (User, EmotionLog), Auth JWT + Guard role; `app.py` verify JWT cho WS, bỏ ghi CSV; `web/` React + TS, router, login/register, layout theo role
 - [x] Module 4: Check-in webcam (POST/GET /emotion-logs, consent webcam, WS frame capture 3fps, gom 8s lưu MySQL)
 - [x] Module 5: Nhật ký (Prisma JournalEntry, CRUD REST API /journal-entries, UI viết/xem/sửa/xóa nhật ký)
+- [x] Module 6: Dashboard (seed 16 ngày giả kèm chuỗi 5 ngày tiêu cực, GET /emotion-logs/summary, UI Recharts Line/Pie/Bar)
+- [x] Module 7: Cảnh báo và gợi ý (AlertRule, Resource, GET /alerts/me, GET /resources, banner cảnh báo mức vừa/kéo dài, thở 4-7-8, hotline 111, disclaimer y tế)
 
 ## In progress
 - (chưa có)
@@ -25,15 +27,15 @@ Giai đoạn: B – MVP | Cập nhật lần cuối: 2026-10-09
 - [x] 5.2 `web/`: trang Nhật ký (form + danh sách + sửa/xóa)
 
 ### Module 6: Dashboard
-- [ ] 6.1 `api/`: script seed dữ liệu giả (≥14 ngày, có một chuỗi ngày tiêu cực) cho user demo
-- [ ] 6.2 `api/`: `GET /emotion-logs/summary?range=day|week` (cảm xúc chủ đạo, điểm trung bình theo ngày, so sánh tuần trước)
-- [ ] 6.3 `web/`: trang Dashboard (Recharts: xu hướng ngày/tuần, phân bố cảm xúc, so sánh tuần trước)
+- [x] 6.1 `api/`: script seed dữ liệu giả (≥14 ngày, có một chuỗi ngày tiêu cực) cho user demo
+- [x] 6.2 `api/`: `GET /emotion-logs/summary?range=day|week` (cảm xúc chủ đạo, điểm trung bình theo ngày, so sánh tuần trước)
+- [x] 6.3 `web/`: trang Dashboard (Recharts: xu hướng ngày/tuần, phân bố cảm xúc, so sánh tuần trước)
 
 ### Module 7: Cảnh báo và gợi ý
-- [ ] 7.1 `api/`: Prisma `AlertRule` + hàm tính chuỗi ngày tiêu cực (mặc định ≥4/7 ngày vượt ngưỡng), `GET /alerts/me` trả mức nhẹ/vừa/kéo dài
-- [ ] 7.2 `api/`: Prisma `Resource` + seed tài liệu/bài tập, `GET /resources?level=`
-- [ ] 7.3 `web/`: banner cảnh báo + gợi ý theo mức trên Dashboard
-- [ ] 7.4 `web/`: trang bài tập thở 4-7-8 (animation), mục "Cần giúp ngay" (đường dây nóng) luôn hiển thị, disclaimer "không phải chẩn đoán y tế"
+- [x] 7.1 `api/`: Prisma `AlertRule` + hàm tính chuỗi ngày tiêu cực (mặc định ≥4/7 ngày vượt ngưỡng), `GET /alerts/me` trả mức nhẹ/vừa/kéo dài
+- [x] 7.2 `api/`: Prisma `Resource` + seed tài liệu/bài tập, `GET /resources?level=`
+- [x] 7.3 `web/`: banner cảnh báo + gợi ý theo mức trên Dashboard
+- [x] 7.4 `web/`: trang bài tập thở 4-7-8 (animation), mục "Cần giúp ngay" (đường dây nóng) luôn hiển thị, disclaimer "không phải chẩn đoán y tế"
 
 ## Roadmap sau B (chưa làm, đừng làm trước)
 C: 8 Quyền riêng tư (ConsentShare, xuất/xóa dữ liệu) → 9 Counselor → 10 Lịch hẹn/tài liệu
@@ -50,4 +52,9 @@ D: 11 Admin → 12 Hoàn thiện/deploy
 
 ## Endpoint đã có (tóm tắt, điền theo thực tế)
 - POST /auth/register, POST /auth/login – trả JWT
+- GET /auth/me
+- POST /emotion-logs, GET /emotion-logs, GET /emotion-logs/summary
+- POST, GET, PATCH, DELETE /journal-entries
+- GET /alerts/me
+- GET /resources
 - WS (`app.py`): cần JWT, nhận frame, trả `{emotion, scores}`

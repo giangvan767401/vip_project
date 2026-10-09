@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+
+# Dataset & large training data
+model/fer2013/
+
+# Logs & temp
+*.log
+emotion_log.csv
+
+# Compiled class file
+*.class
+
+# Package Files
+*.jar
+*.war
+*.zip
+*.tar.gz
+*.rar
+

@@ -1,0 +1,165 @@
+"""
+FastAPI WebSocket server for real-time emotion detection.
+Browser sends webcam frames → FastAPI detects faces & predicts emotions → returns results as JSON.
+"""
+
+import os
+import sys
+import json
+import base64
+import time
+import asyncio
+from collections import defaultdict, deque
+from datetime import datetime
+
+import cv2
+import numpy as np
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+# ── Add src/training to path so we can import predict_emotion & centroid_tracker ──
+TRAINING_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "src", "training")
+sys.path.insert(0, TRAINING_DIR)
+
+from centroid_tracker import CentroidTracker
+import predict_emotion
+
+# ── App setup ──
+app = FastAPI(title="Emotion Detection Web")
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+os.makedirs(STATIC_DIR, exist_ok=True)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# ── Emotion colors (RGB for frontend) ──
+EMOTION_COLORS = {
+    "Angry":    "#FF4444",
+    "Disgust":  "#66BB6A",
+    "Fear":     "#AB47BC",
+    "Happy":    "#FFD600",
+    "Sad":      "#42A5F5",
+    "Surprise": "#FF7043",
+    "Neutral":  "#9E9E9E",
+}
+
+# ── Haar cascade ──
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+
+# ── Smoothing config ──
+SMOOTHING_WINDOW = 5
+
+
+@app.get("/")
+async def root():
+    """Serve the frontend."""
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(ws: WebSocket):
+    """Handle real-time webcam frame processing via WebSocket."""
+    await ws.accept()
+
+    tracker = CentroidTracker(max_disappeared=30)
+    emotion_history: dict[int, deque] = defaultdict(lambda: deque(maxlen=SMOOTHING_WINDOW))
+    frame_count = 0
+    prev_time = time.time()
+
+    try:
+        while True:
+            # Receive base64-encoded JPEG frame from browser
+            data = await ws.receive_text()
+            msg = json.loads(data)
+
+            if msg.get("type") != "frame":
+                continue
+
+            # Decode base64 → numpy array
+            img_data = msg["data"]
+            # Strip data URL prefix if present
+            if "," in img_data:
+                img_data = img_data.split(",", 1)[1]
+
+            img_bytes = base64.b64decode(img_data)
+            np_arr = np.frombuffer(img_bytes, dtype=np.uint8)
+            frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+            if frame is None:
+                continue
+
+            # Flip horizontally for mirror effect
+            frame = cv2.flip(frame, 1)
+
+            # ── Face detection ──
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
+
+            # ── Centroid tracking ──
+            rects = [(int(x), int(y), int(w), int(h)) for (x, y, w, h) in faces]
+            objects = tracker.update(rects)
+
+            # ── Build result list ──
+            detections = []
+            frame_count += 1
+
+            for object_id, centroid in objects.items():
+                for (x, y, w, h) in rects:
+                    cx, cy = x + w // 2, y + h // 2
+                    if abs(centroid[0] - cx) < 10 and abs(centroid[1] - cy) < 10:
+                        face_img = frame[y:y + h, x:x + w]
+
+                        # Predict every 3rd frame for performance
+                        if frame_count % 3 == 0:
+                            _, emotion, _, probs = predict_emotion.predict_emotion(face_img)
+                            if probs is not None:
+                                emotion_history[object_id].append(probs.tolist())
+
+                        # Smoothing
+                        if len(emotion_history[object_id]) > 0:
+                            avg_probs = np.mean(emotion_history[object_id], axis=0)
+                            smoothed_index = int(np.argmax(avg_probs))
+                            smoothed_emotion = predict_emotion.emotion_labels[smoothed_index]
+
+                            detections.append({
+                                "id": int(object_id),
+                                "x": int(x),
+                                "y": int(y),
+                                "w": int(w),
+                                "h": int(h),
+                                "emotion": smoothed_emotion,
+                                "color": EMOTION_COLORS.get(smoothed_emotion, "#00FF00"),
+                                "probabilities": {
+                                    predict_emotion.emotion_labels[i]: round(float(avg_probs[i]) * 100, 1)
+                                    for i in range(len(predict_emotion.emotion_labels))
+                                },
+                            })
+                        break
+
+            # ── FPS ──
+            curr_time = time.time()
+            fps = 1.0 / max(curr_time - prev_time, 0.001)
+            prev_time = curr_time
+
+            # ── Send response ──
+            response = {
+                "type": "result",
+                "fps": round(fps, 1),
+                "detections": detections,
+                "frame_width": frame.shape[1],
+                "frame_height": frame.shape[0],
+            }
+            await ws.send_text(json.dumps(response))
+
+    except WebSocketDisconnect:
+        print("🔌 Client disconnected")
+    except Exception as e:
+        print(f"❌ WebSocket error: {e}")
+        import traceback
+        traceback.print_exc()
+
+
+if __name__ == "__main__":
+    import uvicorn
+    print("🚀 Starting Emotion Detection Web Server...")
+    print("📌 Open http://localhost:8000 in your browser")
+    uvicorn.run(app, host="0.0.0.0", port=8000)

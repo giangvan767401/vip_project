@@ -18,18 +18,28 @@ enum ConsentStatus {
   REVOKED
 }
 
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
 model User {
-  id               String         @id @default(cuid())
-  email            String         @unique
-  password         String
-  fullName         String
-  role             Role           @default(USER)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  emotionLogs      EmotionLog[]
-  journalEntries   JournalEntry[]
-  consentsGiven    ConsentShare[] @relation("UserConsents")
-  consentsReceived ConsentShare[] @relation("CounselorConsents")
+  id                    String         @id @default(cuid())
+  email                 String         @unique
+  password              String
+  fullName              String
+  role                  Role           @default(USER)
+  isActive              Boolean        @default(true)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  emotionLogs           EmotionLog[]
+  journalEntries        JournalEntry[]
+  consentsGiven         ConsentShare[] @relation("UserConsents")
+  consentsReceived      ConsentShare[] @relation("CounselorConsents")
+  appointmentsStudent   Appointment[]  @relation("StudentAppointments")
+  appointmentsCounselor Appointment[]  @relation("CounselorAppointments")
+  resourcesCreated      Resource[]     @relation("CreatedResources")
 
   @@map("users")
 }
@@ -85,6 +95,7 @@ model AlertRule {
 
 model Resource {
   id              String   @id @default(cuid())
+  creatorId       String?
   title           String
   description     String?  @db.Text
   type            String   // EXERCISE, ARTICLE, HOTLINE, TIP
@@ -92,9 +103,14 @@ model Resource {
   content         String?  @db.Text
   url             String?
   durationMinutes Int?
+  isPublished     Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  creator User? @relation("CreatedResources", fields: [creatorId], references: [id], onDelete: SetNull)
+
+  @@index([creatorId])
+  @@index([level])
   @@map("resources")
 }
 
@@ -117,4 +133,25 @@ model ConsentShare {
   @@index([status])
   @@map("consent_shares")
 }
+
+model Appointment {
+  id          String            @id @default(cuid())
+  userId      String
+  counselorId String
+  startAt     DateTime
+  note        String?           @db.Text
+  status      AppointmentStatus @default(PENDING)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  user      User @relation("StudentAppointments", fields: [userId], references: [id], onDelete: Cascade)
+  counselor User @relation("CounselorAppointments", fields: [counselorId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([counselorId])
+  @@index([startAt])
+  @@index([status])
+  @@map("appointments")
+}
+
 

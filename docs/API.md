@@ -308,7 +308,36 @@ Tài liệu hợp đồng API giữa Client (Frontend Web/AI Service) và Server
 - **Truy cập**: Cần Bearer Token
 - **Query Params**:
   - `level` (tùy chọn): mức lọc (`all`, `nhe`, `vua`, `keo_dai`)
-- **Response `200 OK`**: Danh sách mảng các `Resource` (loại `EXERCISE`, `ARTICLE`, `HOTLINE`).
+- **Response `200 OK`**: Danh sách mảng các `Resource` (loại `EXERCISE`, `ARTICLE`, `HOTLINE`, `TIP`).
+
+#### B. Chuyên viên tạo tài nguyên mới
+- **Method**: `POST`
+- **Endpoint**: `/resources`
+- **Truy cập**: Cần Bearer Token, Role: `COUNSELOR`
+- **Request Body**:
+  ```json
+  {
+    "title": "Bài tập thiền chánh niệm 10 phút",
+    "description": "Giúp bình tâm và giảm lo âu",
+    "type": "EXERCISE",
+    "level": "nhe",
+    "content": "Các bước thực hiện...",
+    "durationMinutes": 10
+  }
+  ```
+- **Response `201 Created`**: Đối tượng `Resource` đã tạo (kèm `creatorId = counselorId`).
+
+#### C. Chuyên viên sửa tài nguyên (chỉ tài nguyên do chính mình tạo)
+- **Method**: `PATCH`
+- **Endpoint**: `/resources/:id`
+- **Truy cập**: Cần Bearer Token, Role: `COUNSELOR`
+- **Lỗi bảo mật**: Trả về `403 Forbidden` nếu cố tình chỉnh sửa tài liệu của hệ thống hoặc chuyên viên khác.
+
+#### D. Chuyên viên xóa tài nguyên (chỉ tài nguyên do chính mình tạo)
+- **Method**: `DELETE`
+- **Endpoint**: `/resources/:id`
+- **Truy cập**: Cần Bearer Token, Role: `COUNSELOR`
+- **Lỗi bảo mật**: Trả về `403 Forbidden` nếu cố tình xóa tài liệu không thuộc quyền sở hữu của mình.
 
 ---
 
@@ -399,13 +428,240 @@ Tài liệu hợp đồng API giữa Client (Frontend Web/AI Service) và Server
 
 ---
 
+### 2.11. Chuyên viên tư vấn (`/counselor`)
+
+#### A. Lấy danh sách sinh viên đồng ý chia sẻ
+- **Method**: `GET`
+- **Endpoint**: `/counselor/clients`
+- **Truy cập**: Cần Bearer Token, Role: `COUNSELOR`
+- **Quy tắc**: Chỉ trả những sinh viên có bản ghi `ConsentShare` trạng thái `ACTIVE` với chính chuyên viên này.
+- **Response `200 OK`**:
+  ```json
+  [
+    {
+      "consentId": "cmv18...",
+      "grantedAt": "2026-10-10T00:09:46.000Z",
+      "student": {
+        "id": "cmv1635vm0000vmc0oydn6sse",
+        "fullName": "Sinh viên Demo",
+        "email": "demo@example.com"
+      },
+      "alertLevel": "vua",
+      "activeRuleName": "Cảnh báo mức vừa (≥4/7 ngày tiêu cực)",
+      "consecutiveNegativeDays": 5,
+      "lastCheckIn": "2026-10-10T00:00:00.000Z",
+      "lastEmotion": "Sad"
+    }
+  ]
+  ```
+
+#### B. Xem chi tiết tóm tắt xu hướng cảm xúc sinh viên
+- **Method**: `GET`
+- **Endpoint**: `/counselor/clients/:id/summary?range=day|week`
+- **Truy cập**: Cần Bearer Token, Role: `COUNSELOR`
+- **Quy tắc bảo mật quan trọng (Không cache)**:
+  - Hệ thống truy vấn trực tiếp DB kiểm tra `ConsentShare` với `userId = :id`, `counselorId = counselorId`, `status = ACTIVE`.
+  - Nếu sinh viên chưa cấp quyền hoặc đã thu hồi (`REVOKED`): Lập tức trả về **`403 Forbidden`** (`{"message": "Bạn không có quyền truy cập dữ liệu của sinh viên này hoặc sinh viên đã thu hồi quyền chia sẻ.", "code": 403}`).
+- **Response `200 OK`**:
+  ```json
+  {
+    "student": { "id": "...", "fullName": "...", "email": "..." },
+    "consent": { "id": "...", "grantedAt": "..." },
+    "summary": { ... },
+    "alert": { ... },
+    "recentLogs": [ ... ]
+  }
+  ```
+
+#### C. Thống kê ẩn danh toàn trường
+- **Method**: `GET`
+- **Endpoint**: `/counselor/stats`
+- **Truy cập**: Cần Bearer Token, Role: `COUNSELOR`
+- **Quy tắc bảo mật nhóm nhỏ (k-Anonymity)**:
+  - Chỉ trả dữ liệu chi tiết khi có ít nhất 5 sinh viên ghi nhận dữ liệu trong hệ thống (`totalStudents >= 5`).
+  - Nếu `< 5` người: Trả về `{ "hasEnoughData": false, "minimumRequired": 5, "currentCount": X, "message": "..." }`.
+- **Response `200 OK` (khi >= 5 người)**:
+  ```json
+  {
+    "hasEnoughData": true,
+    "totalStudents": 12,
+    "totalCheckIns": 145,
+    "avgPositiveScore": 58.4,
+    "avgNegativeScore": 28.1,
+    "distribution": [
+      { "emotion": "Happy", "count": 65, "percentage": 44.8 }
+    ]
+  }
+  ```
+
+---
+
+### 2.12. Lịch hẹn tham vấn (`/appointments` & `/counselor/appointments`)
+
+#### A. Sinh viên đặt lịch hẹn mới
+- **Method**: `POST`
+- **Endpoint**: `/appointments`
+- **Truy cập**: Cần Bearer Token, Role: `USER`
+- **Request Body**:
+  ```json
+  {
+    "counselorId": "cmv17...cuid",
+    "startAt": "2026-10-11T09:30:00.000Z",
+    "note": "Áp lực thi cử và mất ngủ"
+  }
+  ```
+- **Quy tắc**:
+  - Chặn trùng lịch của cùng chuyên viên tư vấn (khoảng cách 30 phút giữa các lịch hẹn). Trả về `409 Conflict` nếu trùng giờ.
+  - Đặt lịch độc lập với `ConsentShare`, không tự động chia sẻ dữ liệu cảm xúc/nhật ký.
+- **Response `201 Created`**: Đối tượng `Appointment` với `status: "PENDING"`.
+
+#### B. Sinh viên xem danh sách lịch hẹn của mình
+- **Method**: `GET`
+- **Endpoint**: `/appointments/me`
+- **Truy cập**: Cần Bearer Token, Role: `USER`
+- **Response `200 OK`**: Danh sách mảng các `Appointment` của chính sinh viên đó.
+
+#### C. Sinh viên hủy lịch hẹn
+- **Method**: `PATCH`
+- **Endpoint**: `/appointments/:id/cancel`
+- **Truy cập**: Cần Bearer Token, Role: `USER`
+- **Response `200 OK`**: Đối tượng `Appointment` với `status: "CANCELLED"`.
+
+#### D. Chuyên viên xem danh sách lịch hẹn gửi đến mình
+- **Method**: `GET`
+- **Endpoint**: `/counselor/appointments`
+- **Truy cập**: Cần Bearer Token, Role: `COUNSELOR`
+- **Response `200 OK`**: Danh sách các lịch hẹn sinh viên đăng ký với chuyên viên này.
+
+#### E. Chuyên viên cập nhật trạng thái lịch hẹn
+- **Method**: `PATCH`
+- **Endpoint**: `/counselor/appointments/:id`
+- **Truy cập**: Cần Bearer Token, Role: `COUNSELOR`
+- **Request Body**:
+  ```json
+  {
+    "status": "CONFIRMED"
+  }
+  ```
+  *(Các giá trị hợp lệ: `"CONFIRMED"`, `"CANCELLED"`)*
+---
+
+## 2.10. Quản trị hệ thống (`/admin`) – Role `ADMIN`
+
+Tất cả các endpoint trong mục này bắt buộc có Bearer Token và Role là `ADMIN`. Các vai trò khác đều nhận `403 Forbidden`.
+**Cam kết bảo mật:** Không endpoint nào trong nhóm này trả về dữ liệu `EmotionLog` hay `JournalEntry` của cá nhân người dùng.
+
+### A. Lấy danh sách người dùng
+- **Method**: `GET`
+- **Endpoint**: `/admin/users`
+- **Response `200 OK`**:
+  ```json
+  {
+    "total": 8,
+    "users": [
+      {
+        "id": "cm...",
+        "email": "user@example.com",
+        "fullName": "Sinh viên Demo",
+        "role": "USER",
+        "isActive": true,
+        "createdAt": "2026-10-09T14:00:00.000Z",
+        "_count": {
+          "emotionLogs": 18,
+          "journalEntries": 7,
+          "appointmentsStudent": 2,
+          "appointmentsCounselor": 0
+        }
+      }
+    ]
+  }
+  ```
+
+### B. Tạo tài khoản Chuyên viên Tham vấn (Counselor)
+- **Method**: `POST`
+- **Endpoint**: `/admin/counselors`
+- **Request Body**:
+  ```json
+  {
+    "email": "counselor.new@mindlog.edu.vn",
+    "fullName": "TS. Lê Hoài An",
+    "password": "password123"
+  }
+  ```
+- **Response `201 Created`**: Thông tin chuyên viên vừa tạo (`role: COUNSELOR`, `isActive: true`).
+
+### C. Đổi vai trò người dùng (Role)
+- **Method**: `PATCH`
+- **Endpoint**: `/admin/users/:id/role`
+- **Request Body**:
+  ```json
+  {
+    "role": "COUNSELOR"
+  }
+  ```
+- **Response `200 OK`**: Thông tin người dùng sau khi cập nhật role.
+
+### D. Khóa hoặc Mở khóa tài khoản
+- **Method**: `PATCH`
+- **Endpoint**: `/admin/users/:id/status`
+- **Request Body**:
+  ```json
+  {
+    "isActive": false
+  }
+  ```
+- **Response `200 OK`**: Thông tin người dùng sau khi khóa/mở khóa (`isActive: boolean`). Tài khoản bị khóa sẽ không thể đăng nhập (trả về 401).
+
+### E. Quản lý Quy tắc Cảnh báo (CRUD AlertRule)
+- **`GET /admin/alert-rules`**: Lấy danh sách quy tắc hiện tại (ngưỡng %, số ngày liên tiếp, cửa sổ ngày, mức độ, kích hoạt).
+- **`POST /admin/alert-rules`**: Tạo quy tắc cảnh báo mới.
+- **`PATCH /admin/alert-rules/:id`**: Cập nhật ngưỡng (`negativeThreshold`), `consecutiveDays`, `timeWindowDays`, `level`, `isActive`. (Khi cập nhật, API tính cảnh báo sinh viên `GET /alerts/me` sẽ phản ánh ngưỡng mới ngay lập tức).
+- **`DELETE /admin/alert-rules/:id`**: Xóa quy tắc cảnh báo.
+
+### F. Thống kê hệ thống vĩ mô
+- **Method**: `GET`
+- **Endpoint**: `/admin/stats`
+- **Response `200 OK`**:
+  ```json
+  {
+    "users": {
+      "total": 9,
+      "students": 3,
+      "counselors": 4,
+      "admins": 2
+    },
+    "activities": {
+      "totalEmotionLogs": 19,
+      "totalJournalEntries": 7,
+      "totalActiveConsents": 1
+    },
+    "appointments": {
+      "total": 2,
+      "confirmed": 0,
+      "pending": 0,
+      "cancelled": 2
+    },
+    "resources": {
+      "total": 6
+    }
+  }
+  ```
+
+### G. Kiểm duyệt tài liệu & bài tập
+- **`GET /admin/resources`**: Lấy toàn bộ tài liệu trong hệ thống (kèm thông tin tác giả).
+- **`PATCH /admin/resources/:id/visibility`**: Ẩn hoặc công khai tài liệu (`{"isPublished": false}`).
+- **`DELETE /admin/resources/:id`**: Xóa tài liệu vi phạm quy chế.
+
+---
+
 ## 3. Database Schema Models (Prisma)
-- **User**: `id`, `email`, `password` (hashed with bcrypt), `fullName`, `role` (`USER` | `COUNSELOR` | `ADMIN`), `createdAt`, `updatedAt`.
+- **User**: `id`, `email`, `password` (hashed with bcrypt), `fullName`, `role` (`USER` | `COUNSELOR` | `ADMIN`), `isActive` (Boolean), `createdAt`, `updatedAt`.
 - **EmotionLog**: `id`, `userId`, `emotion`, `positiveScore` (Float), `negativeScore` (Float), `scores` (Json), `startedAt` (DateTime), `endedAt` (DateTime), `note` (Text), `createdAt` (DateTime).
 - **JournalEntry**: `id`, `userId`, `mood` (Int 1–5), `note` (Text), `date` (DateTime), `createdAt` (DateTime), `updatedAt` (DateTime).
 - **AlertRule**: `id`, `name`, `negativeThreshold`, `consecutiveDays`, `timeWindowDays`, `level`, `isActive`, `createdAt`, `updatedAt`.
-- **Resource**: `id`, `title`, `description`, `type`, `level`, `content`, `url`, `durationMinutes`, `createdAt`, `updatedAt`.
+- **Resource**: `id`, `creatorId` (nullable), `title`, `description`, `type`, `level`, `content`, `url`, `durationMinutes`, `isPublished` (Boolean), `createdAt`, `updatedAt`.
 - **ConsentShare**: `id`, `userId`, `counselorId`, `status` (`ACTIVE` | `REVOKED`), `grantedAt`, `revokedAt`, `createdAt`, `updatedAt`.
+- **Appointment**: `id`, `userId`, `counselorId`, `startAt`, `note`, `status` (`PENDING` | `CONFIRMED` | `CANCELLED`), `createdAt`, `updatedAt`.
 
 ---
 

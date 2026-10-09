@@ -11,7 +11,8 @@ import {
   BookOpen,
   Users,
   Bell,
-  Settings
+  Settings,
+  Calendar
 } from 'lucide-react';
 
 interface RoleLayoutProps {
@@ -59,6 +60,7 @@ export const RoleLayout: React.FC<RoleLayoutProps> = ({ children }) => {
           { to: '/student/dashboard', label: 'Tổng quan cảm xúc', icon: LayoutDashboard },
           { to: '/student/checkin', label: 'Nhận diện Webcam', icon: Camera },
           { to: '/student/journal', label: 'Nhật ký cá nhân', icon: BookOpen },
+          { to: '/student/appointments', label: 'Lịch hẹn & Tài liệu', icon: Calendar },
           { to: '/student/privacy', label: 'Quyền riêng tư', icon: ShieldCheck },
         ];
     }

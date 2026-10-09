@@ -1,54 +1,49 @@
 # PROGRESS – cập nhật sau mỗi task (giữ file < 100 dòng)
 
 ## Trạng thái hiện tại
-Giai đoạn: C – Hỗ trợ con người | Cập nhật lần cuối: YYYY-MM-DD
+Giai đoạn: D – Hoàn thiện | Cập nhật lần cuối: 2026-10-10
 
 ## Done
 - [x] Demo gốc: `app.py` (FastAPI + WebSocket) + `static/index.html`
-- [x] Giai đoạn A: docker-compose MySQL, `.env.example`, CORS; `api/` NestJS + Prisma, Auth JWT + Guard role; `app.py` verify JWT cho WS; `web/` React + TS, router, login/register, layout theo role
-- [x] Giai đoạn B (MVP): check-in webcam + `POST /emotion-logs`; Nhật ký (`JournalEntry`); Dashboard Recharts + seed dữ liệu giả; cảnh báo theo rule (`AlertRule`), `Resource`, bài tập thở, mục "Cần giúp ngay"
-- [x] Module 8 (Quyền riêng tư): Prisma `ConsentShare`; `GET /counselors`, `POST /consents`, `DELETE /consents/:id`, `GET /consents/me`; `GET /me/export`, `DELETE /me/data` (xác thực mật khẩu); giao diện quản lý chia sẻ, xuất JSON và xóa dữ liệu
+- [x] A (nền tảng): docker-compose MySQL, `.env.example`, CORS; `api/` NestJS + Prisma, Auth JWT + Guard role; `app.py` verify JWT cho WS; `web/` React + TS
+- [x] B (MVP): check-in webcam + `/emotion-logs`; Nhật ký; Dashboard Recharts + seed; cảnh báo rule, `Resource`, bài tập thở, "Cần giúp ngay"
+- [x] C: quyền riêng tư (`ConsentShare`, export/xóa dữ liệu); Counselor (xem theo consent, stats ẩn danh, Socket.IO); lịch hẹn + quản lý tài liệu
+- [x] D (11): Admin – Guard ADMIN, `GET /admin/users` (không trả cảm xúc/nhật ký), tạo COUNSELOR, đổi role, khóa/mở khóa (`isActive`); CRUD `AlertRule` (ngưỡng đọc từ DB); `GET /admin/stats` (tổng hợp vĩ mô); kiểm duyệt `Resource` (`isPublished`); trang Admin 4 tab; JWT strategy check `isActive`
 
 ## In progress
 - (chưa có)
 
-## Next – Giai đoạn C (làm đúng thứ tự, mỗi lần 1 task nhỏ)
+## Next – Giai đoạn D (làm đúng thứ tự, mỗi lần 1 task nhỏ)
 
-### Module 8: Quyền riêng tư (Đã hoàn thành)
-- [x] 8.1 `api/`: Prisma `ConsentShare` (userId, counselorId, status ACTIVE/REVOKED, grantedAt, revokedAt); `GET /counselors`, `POST /consents`, `DELETE /consents/:id` (thu hồi), `GET /consents/me`
-- [x] 8.2 `api/`: `GET /me/export` (JSON toàn bộ dữ liệu của mình), `DELETE /me/data` (xóa EmotionLog, JournalEntry, ConsentShare; yêu cầu nhập lại mật khẩu)
-- [x] 8.3 `web/`: trang Quyền riêng tư: chọn tư vấn viên và bật/tắt chia sẻ, xuất dữ liệu, xóa dữ liệu (có xác nhận), nội dung giải thích rõ ai xem được gì
+### Module 11: Admin ✅
+- [x] 11.1 `api/`: Guard ADMIN; `GET /admin/users` (KHÔNG trả dữ liệu cảm xúc/nhật ký), tạo tài khoản COUNSELOR, đổi role, khóa/mở khóa tài khoản
+- [x] 11.2 `api/`: CRUD `AlertRule` (chỉnh ngưỡng, số ngày xét, mức gợi ý); hàm cảnh báo đọc ngưỡng từ DB
+- [x] 11.3 `api/`: `GET /admin/stats` (số user, số phiên check-in, số lịch hẹn; chỉ số tổng hợp, không dữ liệu cá nhân) + xóa/ẩn `Resource` vi phạm
+- [x] 11.4 `web/`: trang Admin: tài khoản, ngưỡng cảnh báo, thống kê hệ thống, nội dung
 
-### Module 9: Counselor
-- [ ] 9.1 `api/`: seed 2 tài khoản COUNSELOR; Guard/hàm kiểm tra `ConsentShare` ACTIVE ở MỌI truy vấn của Counselor (không cache); `GET /counselor/clients`, `GET /counselor/clients/:id/summary` (tái dùng logic summary)
-- [ ] 9.2 `api/`: `GET /counselor/stats` thống kê ẩn danh toàn hệ thống, chỉ trả khi nhóm ≥ 5 người (tránh lộ danh tính)
-- [ ] 9.3 `api/`: Socket.IO gateway: verify JWT khi kết nối, room theo counselorId, đẩy cảnh báo khi user đã đồng ý chia sẻ đạt mức "kéo dài"
-- [ ] 9.4 `web/`: trang Counselor: danh sách user đã đồng ý, xem xu hướng từng người, thống kê ẩn danh, thông báo realtime
-
-### Module 10: Lịch hẹn và tài liệu
-- [ ] 10.1 `api/`: Prisma `Appointment` (userId, counselorId, startAt, status PENDING/CONFIRMED/CANCELLED); user đặt/hủy, counselor xác nhận/từ chối; chặn trùng giờ
-- [ ] 10.2 `api/`: Counselor tạo/sửa/xóa `Resource` (Guard COUNSELOR)
-- [ ] 10.3 `web/`: User đặt lịch, xem lịch; Counselor xem và xử lý lịch hẹn
-- [ ] 10.4 `web/`: Counselor quản lý tài liệu; User xem tài liệu theo mức gợi ý
-
-## Roadmap sau C (chưa làm, đừng làm trước)
-D: 11 Admin → 12 Hoàn thiện/deploy
+### Module 12: Hoàn thiện
+- [ ] 12.1 Test luồng chính (script hoặc e2e): đăng ký → check-in → dashboard → cảnh báo → chia sẻ → counselor xem → thu hồi → 403
+- [ ] 12.2 Xử lý lỗi và UX: mất kết nối WS, từ chối quyền webcam, loading/empty state, thông báo lỗi tiếng Việt
+- [ ] 12.3 Responsive (điện thoại/laptop) và accessibility cơ bản
+- [ ] 12.4 Rà soát bảo mật: rate limit login, helmet, CORS cho domain thật, không log dữ liệu nhạy cảm, secret chỉ ở `.env`, xóa code ghi `emotion_log.csv` nếu còn
+- [ ] 12.5 Deploy: Dockerfile cho `api/`, `app.py` (kèm model), `web/`; docker-compose prod; HTTPS/WSS (webcam chỉ chạy trên HTTPS hoặc localhost)
+- [ ] 12.6 Dữ liệu demo (seed) + kịch bản demo từng vai trò
+- [ ] 12.7 README (cách chạy) + tài liệu báo cáo: kiến trúc, đạo đức/riêng tư, hạn chế và độ chính xác của model
 
 ## Quyết định đã chốt (không bàn lại)
 - Giữ FastAPI cho AI, NestJS cho nghiệp vụ; frame đi thẳng React → FastAPI
 - DB: MySQL + Prisma; không lưu ảnh/video
 - Cảnh báo bằng rule, không dùng ML
-- Counselor chỉ thấy user có `ConsentShare` ACTIVE; thu hồi có hiệu lực ngay lập tức
+- Counselor chỉ thấy user có `ConsentShare` ACTIVE; thu hồi có hiệu lực ngay
 - Thống kê ẩn danh chỉ trả khi nhóm ≥ 5 người
-- Admin không xem cảm xúc cá nhân; mặc định không chia sẻ
+- Admin không xem cảm xúc/nhật ký cá nhân; mặc định không chia sẻ
 
 ## Lỗi / nợ kỹ thuật đã biết
 - (ghi ngắn: lỗi gì, ở file nào)
 
 ## Endpoint đã có (tóm tắt, điền theo thực tế)
-- POST /auth/register, POST /auth/login
-- POST/GET /emotion-logs, GET /emotion-logs/summary, CRUD /journal-entries
-- GET /alerts/me, GET /resources
-- GET /counselors, GET /consents/me, POST /consents, DELETE /consents/:id
-- GET /me/export, DELETE /me/data
+- /auth/*, /emotion-logs (+ /summary), /journal-entries, /alerts/me, /resources
+- /counselors, /consents/*, /me/export, /me/data, /counselor/*, /appointments/*
+- /admin/users, /admin/counselors, /admin/users/:id/role, /admin/users/:id/status
+- /admin/alert-rules (CRUD), /admin/stats, /admin/resources, /admin/resources/:id/visibility
 - WS (`app.py`): cần JWT, nhận frame, trả `{emotion, scores}`

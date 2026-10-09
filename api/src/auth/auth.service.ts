@@ -61,6 +61,10 @@ export class AuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
     }
 
+    if (!user.isActive) {
+      throw new UnauthorizedException('Tài khoản đã bị khóa. Vui lòng liên hệ Quản trị viên.');
+    }
+
     const accessToken = await this.signToken(user.id, user.email, user.role);
 
     return {

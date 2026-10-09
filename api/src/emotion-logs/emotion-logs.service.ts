@@ -1,13 +1,20 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEmotionLogDto } from './dto/create-emotion-log.dto';
+import { AlertsService } from '../alerts/alerts.service';
+import { CounselorGateway } from '../counselor/counselor.gateway';
 
 @Injectable()
 export class EmotionLogsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly alertsService: AlertsService,
+    @Inject(forwardRef(() => CounselorGateway))
+    private readonly counselorGateway: CounselorGateway,
+  ) {}
 
   async create(userId: string, dto: CreateEmotionLogDto) {
-    return this.prisma.emotionLog.create({
+    const log = await this.prisma.emotionLog.create({
       data: {
         userId,
         emotion: dto.emotion,
@@ -19,6 +26,18 @@ export class EmotionLogsService {
         note: dto.note,
       },
     });
+
+    // 9.3 Kiểm tra nếu user đạt mức cảnh báo nguy cơ kéo dài -> đẩy realtime tới counselor có consent ACTIVE
+    try {
+      const alert = await this.alertsService.checkUserAlert(userId);
+      if (alert.level === 'keo_dai') {
+        await this.counselorGateway.notifyProlongedAlert(userId, alert);
+      }
+    } catch (err) {
+      console.error('Lỗi khi gửi thông báo realtime tới counselor:', err);
+    }
+
+    return log;
   }
 
   async findByUser(userId: string, limit = 50) {

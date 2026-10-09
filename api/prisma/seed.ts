@@ -56,6 +56,24 @@ async function main() {
     console.log(`🧑‍⚕️ Counselor: ${counselor.fullName} (${counselor.email})`);
   }
 
+  // 1.2 Seed tài khoản Quản trị viên (Admin)
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@example.com' },
+    update: {
+      fullName: 'Quản trị viên Hệ thống',
+      role: Role.ADMIN,
+      isActive: true,
+    },
+    create: {
+      email: 'admin@example.com',
+      fullName: 'Quản trị viên Hệ thống',
+      password: hashedPassword,
+      role: Role.ADMIN,
+      isActive: true,
+    },
+  });
+  console.log(`🛡️ Admin: ${adminUser.fullName} (${adminUser.email})`);
+
   // Xóa dữ liệu cũ của user demo để tránh trùng lặp khi chạy lại seed
   await prisma.emotionLog.deleteMany({ where: { userId: user.id } });
   await prisma.journalEntry.deleteMany({ where: { userId: user.id } });

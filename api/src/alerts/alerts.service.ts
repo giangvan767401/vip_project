@@ -29,14 +29,18 @@ export class AlertsService {
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startDate = new Date(startOfToday.getTime() - (timeWindowDays - 1) * 24 * 60 * 60 * 1000);
 
-    // 1. Lấy rules đang kích hoạt
+    // 1. Lấy rules đang kích hoạt từ DB
     const rules = await this.prisma.alertRule.findMany({
       where: { isActive: true },
       orderBy: { negativeThreshold: 'desc' },
     });
 
-    // Mặc định rule nếu rỗng: ngưỡng 50%, >=4 ngày
-    const defaultNegativeThreshold = 50.0;
+    const prolongedRule = rules.find((r) => r.level === 'keo_dai') || { consecutiveDays: 6, negativeThreshold: 50.0 };
+    const moderateRule = rules.find((r) => r.level === 'vua') || { consecutiveDays: 4, negativeThreshold: 50.0 };
+    const mildRule = rules.find((r) => r.level === 'nhe') || { consecutiveDays: 2, negativeThreshold: 50.0 };
+
+    // Ngưỡng xét ngày tiêu cực đọc từ DB rule (ưu tiên rule 'vua' hoặc rule đầu tiên)
+    const effectiveThreshold = moderateRule?.negativeThreshold ?? (rules.length > 0 ? rules[0].negativeThreshold : 50.0);
 
     // 2. Lấy logs của user trong 7 ngày
     const logs = await this.prisma.emotionLog.findMany({
@@ -72,7 +76,7 @@ export class AlertsService {
         avgNeg = Number((sum / dayLogs.length).toFixed(1));
       }
 
-      const isNeg = avgNeg >= defaultNegativeThreshold;
+      const isNeg = avgNeg >= effectiveThreshold;
       if (isNeg) {
         totalNegativeDays++;
         currentConsecutive++;
@@ -97,11 +101,6 @@ export class AlertsService {
     let message = 'Tâm trạng của bạn trong 7 ngày qua ở mức ổn định và tích cực.';
     let recommendation = 'Hãy tiếp tục duy trì lối sống lành mạnh, tập thể dục và check-in mỗi ngày nhé!';
 
-    // Kiểm tra rule từ DB hoặc fallback
-    const prolongedRule = rules.find((r) => r.level === 'keo_dai') || { consecutiveDays: 6 };
-    const moderateRule = rules.find((r) => r.level === 'vua') || { consecutiveDays: 4 };
-    const mildRule = rules.find((r) => r.level === 'nhe') || { consecutiveDays: 2 };
-
     if (totalNegativeDays >= prolongedRule.consecutiveDays || maxConsecutiveNegativeDays >= prolongedRule.consecutiveDays) {
       level = 'keo_dai';
       activeRuleName = 'Cảnh báo mức kéo dài (Nguy cơ cao)';
@@ -124,7 +123,7 @@ export class AlertsService {
       totalNegativeDays,
       consecutiveNegativeDays: maxConsecutiveNegativeDays,
       timeWindowDays,
-      thresholdApplied: defaultNegativeThreshold,
+      thresholdApplied: effectiveThreshold,
       activeRuleName,
       message,
       recommendation,

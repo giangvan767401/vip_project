@@ -8,6 +8,9 @@ import { AlertsModule } from './alerts/alerts.module';
 import { ResourcesModule } from './resources/resources.module';
 import { ConsentsModule } from './consents/consents.module';
 import { MeModule } from './me/me.module';
+import { CounselorModule } from './counselor/counselor.module';
+import { AppointmentsModule } from './appointments/appointments.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -23,6 +26,9 @@ import { MeModule } from './me/me.module';
     ResourcesModule,
     ConsentsModule,
     MeModule,
+    CounselorModule,
+    AppointmentsModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

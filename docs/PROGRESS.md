@@ -8,13 +8,13 @@ Giai đoạn: A – Nền tảng | Cập nhật lần cuối: 2026-10-09
 - [x] 0. Chuẩn bị: `docker-compose.yml` (MySQL 8 utf8mb4), `.env.example`, `.gitignore`, bật CORS và đọc config từ `.env` trong `app.py`
 - [x] 1. Backend nền (`api/`): NestJS + Prisma, schema `User`, `EmotionLog`, Auth register/login, JWT, Guard theo role
 - [x] 2. AI service: `app.py` verify JWT khi mở WebSocket, bỏ ghi `emotion_log.csv`, trả JSON gọn `{emotion, scores}`
+- [x] 3. Frontend nền (`web/`): Vite + React + TS, router, trang login/register, lưu token, layout theo role
 
 ## In progress
 - (chưa có)
 
 ## Next – Giai đoạn A (làm đúng thứ tự, mỗi lần 1 task nhỏ)
-- [x] 2. AI service: `app.py` verify JWT khi mở WebSocket, bỏ ghi `emotion_log.csv`, trả JSON gọn `{emotion, scores}`
-- [ ] 3. Frontend nền (`web/`): Vite + React + TS, router, trang login/register, lưu token, layout theo role
+- [x] 3. Frontend nền (`web/`): Vite + React + TS, router, trang login/register, lưu token, layout theo role
 
 ## Roadmap sau A (chưa làm, đừng làm trước)
 B (MVP): 4 Check-in webcam → 5 Nhật ký → 6 Dashboard → 7 Cảnh báo và gợi ý

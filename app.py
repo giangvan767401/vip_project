@@ -9,12 +9,14 @@ import json
 import base64
 import time
 import asyncio
+import hmac
+import hashlib
 from collections import defaultdict, deque
 from datetime import datetime
 
 import cv2
 import numpy as np
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -68,6 +70,39 @@ face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_fronta
 # ── Smoothing config ──
 SMOOTHING_WINDOW = 5
 
+# ── JWT verification config ──
+JWT_SECRET = os.getenv("JWT_SECRET", "super_secret_mindlog_jwt_key_change_in_production")
+
+
+def verify_jwt_token(token: str | None) -> dict | None:
+    """Verify HS256 JWT token using Python standard library."""
+    if not token or not isinstance(token, str):
+        return None
+    try:
+        parts = token.strip().split(".")
+        if len(parts) != 3:
+            return None
+        header_b64, payload_b64, signature_b64 = parts
+
+        def b64url_decode(s: str) -> bytes:
+            padding = "=" * (-len(s) % 4)
+            return base64.urlsafe_b64decode(s + padding)
+
+        signing_input = f"{header_b64}.{payload_b64}".encode("ascii")
+        expected_sig = hmac.new(JWT_SECRET.encode("utf-8"), signing_input, hashlib.sha256).digest()
+        actual_sig = b64url_decode(signature_b64)
+
+        if not hmac.compare_digest(expected_sig, actual_sig):
+            return None
+
+        payload = json.loads(b64url_decode(payload_b64).decode("utf-8"))
+        if "exp" in payload and payload["exp"] < time.time():
+            return None
+
+        return payload
+    except Exception:
+        return None
+
 
 @app.get("/")
 async def root():
@@ -78,6 +113,18 @@ async def root():
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     """Handle real-time webcam frame processing via WebSocket."""
+    # ── Authenticate via JWT ──
+    token = ws.query_params.get("token")
+    if not token:
+        auth_header = ws.headers.get("authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header[7:].strip()
+
+    user_payload = verify_jwt_token(token)
+    if not user_payload:
+        await ws.close(code=status.WS_1008_POLICY_VIOLATION, reason="Unauthorized: Missing or invalid token")
+        return
+
     await ws.accept()
 
     tracker = CentroidTracker(max_disappeared=30)
@@ -140,6 +187,11 @@ async def websocket_endpoint(ws: WebSocket):
                             smoothed_index = int(np.argmax(avg_probs))
                             smoothed_emotion = predict_emotion.emotion_labels[smoothed_index]
 
+                            scores = {
+                                predict_emotion.emotion_labels[i]: round(float(avg_probs[i]) * 100, 1)
+                                for i in range(len(predict_emotion.emotion_labels))
+                            }
+
                             detections.append({
                                 "id": int(object_id),
                                 "x": int(x),
@@ -147,11 +199,9 @@ async def websocket_endpoint(ws: WebSocket):
                                 "w": int(w),
                                 "h": int(h),
                                 "emotion": smoothed_emotion,
+                                "scores": scores,
+                                "probabilities": scores,
                                 "color": EMOTION_COLORS.get(smoothed_emotion, "#00FF00"),
-                                "probabilities": {
-                                    predict_emotion.emotion_labels[i]: round(float(avg_probs[i]) * 100, 1)
-                                    for i in range(len(predict_emotion.emotion_labels))
-                                },
                             })
                         break
 
@@ -160,9 +210,15 @@ async def websocket_endpoint(ws: WebSocket):
             fps = 1.0 / max(curr_time - prev_time, 0.001)
             prev_time = curr_time
 
+            # ── Primary face result (for easy logging) ──
+            primary_emotion = detections[0]["emotion"] if detections else "Neutral"
+            primary_scores = detections[0]["scores"] if detections else {}
+
             # ── Send response ──
             response = {
                 "type": "result",
+                "emotion": primary_emotion,
+                "scores": primary_scores,
                 "fps": round(fps, 1),
                 "detections": detections,
                 "frame_width": frame.shape[1],

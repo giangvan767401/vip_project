@@ -115,3 +115,59 @@ Tài liệu hợp đồng API giữa Client (Frontend Web/AI Service) và Server
 ## 3. Database Schema Models (Prisma)
 - **User**: `id`, `email`, `password` (hashed with bcrypt), `fullName`, `role` (`USER` | `COUNSELOR` | `ADMIN`), `createdAt`, `updatedAt`.
 - **EmotionLog**: `id`, `userId`, `emotion`, `scores` (Json), `note` (Text), `createdAt`.
+
+---
+
+## 4. AI Service – WebSocket API (`app.py`)
+
+### 4.1. Kết nối Real-time Emotion Detection
+- **URL**: `ws://localhost:8000/ws?token=<jwt_token>` (hoặc Header `Authorization: Bearer <jwt_token>`)
+- **Xác thực**:
+  - Yêu cầu JWT hợp lệ (được cấp từ `/auth/login` hoặc `/auth/register`).
+  - Nếu thiếu token hoặc token sai/hết hạn: Kết nối bị từ chối và đóng ngay với **WebSocket Close Code: `1008` (Policy Violation)**, reason: `Unauthorized: Missing or invalid token`.
+
+### 4.2. Gửi Frame webcam (Client → Server)
+- **Format**: JSON Text qua WebSocket
+- **Payload**:
+  ```json
+  {
+    "type": "frame",
+    "data": "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+  }
+  ```
+
+### 4.3. Nhận Kết quả cảm xúc (Server → Client)
+- **Format**: JSON Text qua WebSocket
+- **Payload `result` gọn**:
+  ```json
+  {
+    "type": "result",
+    "emotion": "Happy",
+    "scores": {
+      "Angry": 1.2,
+      "Disgust": 0.1,
+      "Fear": 0.5,
+      "Happy": 88.4,
+      "Sad": 0.8,
+      "Surprise": 2.1,
+      "Neutral": 6.9
+    },
+    "fps": 28.5,
+    "detections": [
+      {
+        "id": 1,
+        "x": 120,
+        "y": 80,
+        "w": 200,
+        "h": 200,
+        "emotion": "Happy",
+        "scores": { ... },
+        "color": "#FFD600"
+      }
+    ],
+    "frame_width": 640,
+    "frame_height": 480
+  }
+  ```
+- **Lưu ý**: Client (React) tổng hợp các kết quả `emotion` và `scores` theo từng chu kỳ (5–10s) rồi gửi `POST /emotion-logs` lên NestJS. Service AI không ghi DB hay ghi file CSV.
+

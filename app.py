@@ -15,8 +15,15 @@ from datetime import datetime
 import cv2
 import numpy as np
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # ── Add src/training to path so we can import predict_emotion & centroid_tracker ──
 TRAINING_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "src", "training")
@@ -27,6 +34,19 @@ import predict_emotion
 
 # ── App setup ──
 app = FastAPI(title="Emotion Detection Web")
+
+# ── CORS setup ──
+cors_origins_raw = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000")
+cors_origins = [origin.strip() for origin in cors_origins_raw.split(",") if origin.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 os.makedirs(STATIC_DIR, exist_ok=True)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -160,6 +180,8 @@ async def websocket_endpoint(ws: WebSocket):
 
 if __name__ == "__main__":
     import uvicorn
+    host = os.getenv("AI_SERVICE_HOST", "0.0.0.0")
+    port = int(os.getenv("AI_SERVICE_PORT", "8000"))
     print("🚀 Starting Emotion Detection Web Server...")
-    print("📌 Open http://localhost:8000 in your browser")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    print(f"📌 Open http://{host}:{port} in your browser")
+    uvicorn.run(app, host=host, port=port)

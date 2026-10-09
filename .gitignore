@@ -9,6 +9,15 @@ venv/
 ENV/
 .venv/
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Node.js dependencies & builds
+node_modules/
+dist/
+
 # Dataset & large training data
 model/fer2013/
 

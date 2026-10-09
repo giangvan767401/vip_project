@@ -126,7 +126,58 @@ class ApiClient {
     });
     return this.handleResponse<import('../types/resource').ResourceItem[]>(res);
   }
+
+  async getCounselors(): Promise<import('../types/privacy').Counselor[]> {
+    const res = await fetch(`${API_BASE_URL}/counselors`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<import('../types/privacy').Counselor[]>(res);
+  }
+
+  async getMyConsents(): Promise<import('../types/privacy').ConsentShare[]> {
+    const res = await fetch(`${API_BASE_URL}/consents/me`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<import('../types/privacy').ConsentShare[]>(res);
+  }
+
+  async grantConsent(counselorId: string): Promise<import('../types/privacy').ConsentShare> {
+    const res = await fetch(`${API_BASE_URL}/consents`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ counselorId }),
+    });
+    return this.handleResponse<import('../types/privacy').ConsentShare>(res);
+  }
+
+  async revokeConsent(id: string): Promise<import('../types/privacy').ConsentShare> {
+    const res = await fetch(`${API_BASE_URL}/consents/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<import('../types/privacy').ConsentShare>(res);
+  }
+
+  async exportMyData(): Promise<import('../types/privacy').ExportDataResponse> {
+    const res = await fetch(`${API_BASE_URL}/me/export`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<import('../types/privacy').ExportDataResponse>(res);
+  }
+
+  async deleteMyData(password: string): Promise<{ message: string; deletedCounts?: Record<string, number> }> {
+    const res = await fetch(`${API_BASE_URL}/me/data`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ password }),
+    });
+    return this.handleResponse<{ message: string; deletedCounts?: Record<string, number> }>(res);
+  }
 }
 
 export const api = new ApiClient();
+
 

@@ -27,6 +27,35 @@ async function main() {
 
   console.log(`👤 User demo: ${user.email} (ID: ${user.id})`);
 
+  // 1.1 Seed các tài khoản Tư vấn viên (Counselors)
+  const counselorsData = [
+    {
+      email: 'counselor@example.com',
+      fullName: 'ThS. Nguyễn Văn Tâm (Chuyên gia Tâm lý học đường)',
+    },
+    {
+      email: 'counselor2@example.com',
+      fullName: 'TS. Trần Thị Mai (Trung tâm Hỗ trợ Sinh viên)',
+    },
+  ];
+
+  for (const c of counselorsData) {
+    const counselor = await prisma.user.upsert({
+      where: { email: c.email },
+      update: {
+        fullName: c.fullName,
+        role: Role.COUNSELOR,
+      },
+      create: {
+        email: c.email,
+        fullName: c.fullName,
+        password: hashedPassword,
+        role: Role.COUNSELOR,
+      },
+    });
+    console.log(`🧑‍⚕️ Counselor: ${counselor.fullName} (${counselor.email})`);
+  }
+
   // Xóa dữ liệu cũ của user demo để tránh trùng lặp khi chạy lại seed
   await prisma.emotionLog.deleteMany({ where: { userId: user.id } });
   await prisma.journalEntry.deleteMany({ where: { userId: user.id } });

@@ -59,6 +59,7 @@ export const RoleLayout: React.FC<RoleLayoutProps> = ({ children }) => {
           { to: '/student/dashboard', label: 'Tổng quan cảm xúc', icon: LayoutDashboard },
           { to: '/student/checkin', label: 'Nhận diện Webcam', icon: Camera },
           { to: '/student/journal', label: 'Nhật ký cá nhân', icon: BookOpen },
+          { to: '/student/privacy', label: 'Quyền riêng tư', icon: ShieldCheck },
         ];
     }
   };

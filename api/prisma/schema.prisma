@@ -13,16 +13,23 @@ enum Role {
   ADMIN
 }
 
+enum ConsentStatus {
+  ACTIVE
+  REVOKED
+}
+
 model User {
-  id             String         @id @default(cuid())
-  email          String         @unique
-  password       String
-  fullName       String
-  role           Role           @default(USER)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  emotionLogs    EmotionLog[]
-  journalEntries JournalEntry[]
+  id               String         @id @default(cuid())
+  email            String         @unique
+  password         String
+  fullName         String
+  role             Role           @default(USER)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  emotionLogs      EmotionLog[]
+  journalEntries   JournalEntry[]
+  consentsGiven    ConsentShare[] @relation("UserConsents")
+  consentsReceived ConsentShare[] @relation("CounselorConsents")
 
   @@map("users")
 }
@@ -89,5 +96,25 @@ model Resource {
   updatedAt       DateTime @updatedAt
 
   @@map("resources")
+}
+
+model ConsentShare {
+  id          String        @id @default(cuid())
+  userId      String
+  counselorId String
+  status      ConsentStatus @default(ACTIVE)
+  grantedAt   DateTime      @default(now())
+  revokedAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user      User @relation("UserConsents", fields: [userId], references: [id], onDelete: Cascade)
+  counselor User @relation("CounselorConsents", fields: [counselorId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, counselorId])
+  @@index([userId])
+  @@index([counselorId])
+  @@index([status])
+  @@map("consent_shares")
 }
 

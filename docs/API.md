@@ -312,10 +312,100 @@ Tài liệu hợp đồng API giữa Client (Frontend Web/AI Service) và Server
 
 ---
 
+### 2.9. Quyền riêng tư & Quản lý chia sẻ (`/consents` & `/counselors`)
+
+#### A. Lấy danh sách chuyên viên tư vấn
+- **Method**: `GET`
+- **Endpoint**: `/counselors`
+- **Truy cập**: Cần Bearer Token
+- **Response `200 OK`**: Mảng các counselor `{ id, fullName, email }`.
+
+#### B. Lấy danh sách quyền chia sẻ của người dùng hiện tại
+- **Method**: `GET`
+- **Endpoint**: `/consents/me`
+- **Truy cập**: Cần Bearer Token, Role: `USER`
+- **Response `200 OK`**: Mảng các `ConsentShare` kèm thông tin `counselor`.
+
+#### C. Cấp quyền chia sẻ dữ liệu cho tư vấn viên
+- **Method**: `POST`
+- **Endpoint**: `/consents`
+- **Truy cập**: Cần Bearer Token, Role: `USER`
+- **Request Body**:
+  ```json
+  {
+    "counselorId": "cmv17...cuid"
+  }
+  ```
+- **Response `201 Created`**: Đối tượng `ConsentShare` với `status: "ACTIVE"`, `grantedAt: ISOString`.
+
+#### D. Thu hồi quyền chia sẻ dữ liệu
+- **Method**: `DELETE`
+- **Endpoint**: `/consents/:id`
+- **Truy cập**: Cần Bearer Token, Role: `USER`
+- **Response `200 OK`**: Đối tượng `ConsentShare` sau khi chuyển `status: "REVOKED"`, `revokedAt: ISOString`.
+
+---
+
+### 2.10. Quản lý dữ liệu người dùng (`/me`)
+
+#### A. Xuất toàn bộ dữ liệu cá nhân (Data Export)
+- **Method**: `GET`
+- **Endpoint**: `/me/export`
+- **Truy cập**: Cần Bearer Token, Role: `USER`
+- **Response `200 OK`**:
+  ```json
+  {
+    "exportedAt": "2026-10-09T17:00:23.000Z",
+    "source": "MindLog Platform",
+    "user": {
+      "id": "cm...cuid",
+      "email": "demo@example.com",
+      "fullName": "Sinh viên Demo",
+      "role": "USER",
+      "createdAt": "2026-10-09T14:00:00.000Z"
+    },
+    "totalEmotionLogs": 18,
+    "totalJournalEntries": 7,
+    "totalConsents": 1,
+    "emotionLogs": [ ... ],
+    "journalEntries": [ ... ],
+    "consents": [ ... ]
+  }
+  ```
+
+#### B. Xóa toàn bộ dữ liệu cá nhân (Data Deletion)
+- **Method**: `DELETE`
+- **Endpoint**: `/me/data`
+- **Truy cập**: Cần Bearer Token, Role: `USER`
+- **Request Body**:
+  ```json
+  {
+    "password": "password123"
+  }
+  ```
+- **Response `200 OK`**:
+  ```json
+  {
+    "message": "Đã xóa toàn bộ dữ liệu nhật ký, cảm xúc và chia sẻ thành công",
+    "deletedCounts": {
+      "emotionLogs": 18,
+      "journalEntries": 7,
+      "consentShares": 1
+    }
+  }
+  ```
+- **Lỗi thường gặp**:
+  - `401 Unauthorized`: `{"message": "Mật khẩu không chính xác", "code": 401}`.
+
+---
+
 ## 3. Database Schema Models (Prisma)
 - **User**: `id`, `email`, `password` (hashed with bcrypt), `fullName`, `role` (`USER` | `COUNSELOR` | `ADMIN`), `createdAt`, `updatedAt`.
 - **EmotionLog**: `id`, `userId`, `emotion`, `positiveScore` (Float), `negativeScore` (Float), `scores` (Json), `startedAt` (DateTime), `endedAt` (DateTime), `note` (Text), `createdAt` (DateTime).
 - **JournalEntry**: `id`, `userId`, `mood` (Int 1–5), `note` (Text), `date` (DateTime), `createdAt` (DateTime), `updatedAt` (DateTime).
+- **AlertRule**: `id`, `name`, `negativeThreshold`, `consecutiveDays`, `timeWindowDays`, `level`, `isActive`, `createdAt`, `updatedAt`.
+- **Resource**: `id`, `title`, `description`, `type`, `level`, `content`, `url`, `durationMinutes`, `createdAt`, `updatedAt`.
+- **ConsentShare**: `id`, `userId`, `counselorId`, `status` (`ACTIVE` | `REVOKED`), `grantedAt`, `revokedAt`, `createdAt`, `updatedAt`.
 
 ---
 

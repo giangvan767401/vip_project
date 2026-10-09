@@ -6,6 +6,8 @@ import { EmotionLogsModule } from './emotion-logs/emotion-logs.module';
 import { JournalEntriesModule } from './journal-entries/journal-entries.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { ResourcesModule } from './resources/resources.module';
+import { ConsentsModule } from './consents/consents.module';
+import { MeModule } from './me/me.module';
 
 @Module({
   imports: [
@@ -19,6 +21,9 @@ import { ResourcesModule } from './resources/resources.module';
     JournalEntriesModule,
     AlertsModule,
     ResourcesModule,
+    ConsentsModule,
+    MeModule,
   ],
 })
 export class AppModule {}
+

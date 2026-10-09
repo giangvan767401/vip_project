@@ -27,12 +27,16 @@ model User {
 }
 
 model EmotionLog {
-  id        String   @id @default(cuid())
-  userId    String
-  emotion   String
-  scores    Json
-  note      String?  @db.Text
-  createdAt DateTime @default(now())
+  id            String    @id @default(cuid())
+  userId        String
+  emotion       String
+  positiveScore Float     @default(0)
+  negativeScore Float     @default(0)
+  scores        Json?
+  startedAt     DateTime  @default(now())
+  endedAt       DateTime  @default(now())
+  note          String?   @db.Text
+  createdAt     DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

@@ -19,7 +19,7 @@ Thứ tự làm: 11 → 13 → 14 → 15 → 12 (chạy local, chưa deploy)
 ## Next – Giai đoạn D (làm đúng thứ tự, mỗi lần 1 task nhỏ)
 
 ### Module 12: Hoàn thiện (làm sau 11, 13, 14, 15)
-- [ ] 12.1 Test luồng chính: đăng ký → check-in → dashboard → cảnh báo → chia sẻ → counselor xem → thu hồi → 403; thêm luồng nhắn tin, hoạt động nhỏ, brief
+- [x] 12.1 Test luồng chính: đăng ký → check-in → dashboard → cảnh báo → chia sẻ → counselor xem → thu hồi → 403; nhắn tin, hoạt động nhỏ, brief (32/32 tests pass)
 - [ ] 12.2 Xử lý lỗi/UX: mất kết nối WS, từ chối webcam, loading/empty state, lỗi tiếng Việt
 - [ ] 12.3 Responsive và accessibility cơ bản
 - [ ] 12.4 Rà soát bảo mật: rate limit, helmet, CORS, không log dữ liệu nhạy cảm (tin nhắn, nhật ký, brief), secret chỉ ở `.env`

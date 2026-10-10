@@ -4,6 +4,19 @@ import { CreateJournalEntryInput, JournalEntry, UpdateJournalEntryInput } from '
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+async function safeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (err: unknown) {
+    if (err instanceof TypeError) {
+      throw new Error(
+        'Không thể kết nối đến máy chủ API (http://localhost:3001). Vui lòng đảm bảo backend NestJS đang chạy (npm run start:dev).',
+      );
+    }
+    throw err;
+  }
+}
+
 class ApiClient {
   private getHeaders(token?: string | null): HeadersInit {
     const headers: HeadersInit = {
@@ -26,7 +39,7 @@ class ApiClient {
   }
 
   async register(body: { email: string; password: string; fullName: string; role?: string }): Promise<AuthResponse> {
-    const res = await fetch(`${API_BASE_URL}/auth/register`, {
+    const res = await safeFetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(body),
@@ -35,7 +48,7 @@ class ApiClient {
   }
 
   async login(body: { email: string; password: string }): Promise<AuthResponse> {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    const res = await safeFetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(body),
@@ -44,7 +57,7 @@ class ApiClient {
   }
 
   async getMe(): Promise<User> {
-    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+    const res = await safeFetch(`${API_BASE_URL}/auth/me`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -52,7 +65,7 @@ class ApiClient {
   }
 
   async createEmotionLog(body: CreateEmotionLogPayload): Promise<EmotionLog> {
-    const res = await fetch(`${API_BASE_URL}/emotion-logs`, {
+    const res = await safeFetch(`${API_BASE_URL}/emotion-logs`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(body),
@@ -61,7 +74,7 @@ class ApiClient {
   }
 
   async getEmotionLogs(): Promise<EmotionLog[]> {
-    const res = await fetch(`${API_BASE_URL}/emotion-logs`, {
+    const res = await safeFetch(`${API_BASE_URL}/emotion-logs`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -69,7 +82,7 @@ class ApiClient {
   }
 
   async getEmotionSummary(range: 'day' | 'week' = 'week'): Promise<import('../types/emotion').EmotionSummaryData> {
-    const res = await fetch(`${API_BASE_URL}/emotion-logs/summary?range=${range}`, {
+    const res = await safeFetch(`${API_BASE_URL}/emotion-logs/summary?range=${range}`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -77,7 +90,7 @@ class ApiClient {
   }
 
   async getJournalEntries(): Promise<JournalEntry[]> {
-    const res = await fetch(`${API_BASE_URL}/journal-entries`, {
+    const res = await safeFetch(`${API_BASE_URL}/journal-entries`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -85,7 +98,7 @@ class ApiClient {
   }
 
   async createJournalEntry(body: CreateJournalEntryInput): Promise<JournalEntry> {
-    const res = await fetch(`${API_BASE_URL}/journal-entries`, {
+    const res = await safeFetch(`${API_BASE_URL}/journal-entries`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(body),
@@ -94,7 +107,7 @@ class ApiClient {
   }
 
   async updateJournalEntry(id: string, body: UpdateJournalEntryInput): Promise<JournalEntry> {
-    const res = await fetch(`${API_BASE_URL}/journal-entries/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/journal-entries/${id}`, {
       method: 'PATCH',
       headers: this.getHeaders(),
       body: JSON.stringify(body),
@@ -103,7 +116,7 @@ class ApiClient {
   }
 
   async deleteJournalEntry(id: string): Promise<{ message: string }> {
-    const res = await fetch(`${API_BASE_URL}/journal-entries/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/journal-entries/${id}`, {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
@@ -111,7 +124,7 @@ class ApiClient {
   }
 
   async getAlert(): Promise<import('../types/alert').UserAlert> {
-    const res = await fetch(`${API_BASE_URL}/alerts/me`, {
+    const res = await safeFetch(`${API_BASE_URL}/alerts/me`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -120,7 +133,7 @@ class ApiClient {
 
   async getResources(level?: string): Promise<import('../types/resource').ResourceItem[]> {
     const query = level ? `?level=${encodeURIComponent(level)}` : '';
-    const res = await fetch(`${API_BASE_URL}/resources${query}`, {
+    const res = await safeFetch(`${API_BASE_URL}/resources${query}`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -128,7 +141,7 @@ class ApiClient {
   }
 
   async getCounselors(): Promise<import('../types/privacy').Counselor[]> {
-    const res = await fetch(`${API_BASE_URL}/counselors`, {
+    const res = await safeFetch(`${API_BASE_URL}/counselors`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -136,7 +149,7 @@ class ApiClient {
   }
 
   async getMyConsents(): Promise<import('../types/privacy').ConsentShare[]> {
-    const res = await fetch(`${API_BASE_URL}/consents/me`, {
+    const res = await safeFetch(`${API_BASE_URL}/consents/me`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -144,7 +157,7 @@ class ApiClient {
   }
 
   async grantConsent(counselorId: string): Promise<import('../types/privacy').ConsentShare> {
-    const res = await fetch(`${API_BASE_URL}/consents`, {
+    const res = await safeFetch(`${API_BASE_URL}/consents`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({ counselorId }),
@@ -153,7 +166,7 @@ class ApiClient {
   }
 
   async revokeConsent(id: string): Promise<import('../types/privacy').ConsentShare> {
-    const res = await fetch(`${API_BASE_URL}/consents/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/consents/${id}`, {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
@@ -161,7 +174,7 @@ class ApiClient {
   }
 
   async exportMyData(): Promise<import('../types/privacy').ExportDataResponse> {
-    const res = await fetch(`${API_BASE_URL}/me/export`, {
+    const res = await safeFetch(`${API_BASE_URL}/me/export`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -169,7 +182,7 @@ class ApiClient {
   }
 
   async deleteMyData(password: string): Promise<{ message: string; deletedCounts?: Record<string, number> }> {
-    const res = await fetch(`${API_BASE_URL}/me/data`, {
+    const res = await safeFetch(`${API_BASE_URL}/me/data`, {
       method: 'DELETE',
       headers: this.getHeaders(),
       body: JSON.stringify({ password }),
@@ -178,7 +191,7 @@ class ApiClient {
   }
 
   async getCounselorClients(): Promise<import('../types/counselor').CounselorClient[]> {
-    const res = await fetch(`${API_BASE_URL}/counselor/clients`, {
+    const res = await safeFetch(`${API_BASE_URL}/counselor/clients`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -189,7 +202,7 @@ class ApiClient {
     studentId: string,
     range: 'day' | 'week' = 'week',
   ): Promise<import('../types/counselor').CounselorClientSummary> {
-    const res = await fetch(`${API_BASE_URL}/counselor/clients/${studentId}/summary?range=${range}`, {
+    const res = await safeFetch(`${API_BASE_URL}/counselor/clients/${studentId}/summary?range=${range}`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -197,7 +210,7 @@ class ApiClient {
   }
 
   async getCounselorStats(): Promise<import('../types/counselor').CounselorStats> {
-    const res = await fetch(`${API_BASE_URL}/counselor/stats`, {
+    const res = await safeFetch(`${API_BASE_URL}/counselor/stats`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -206,7 +219,7 @@ class ApiClient {
 
   // 10.1 & 10.3: Lịch hẹn
   async createAppointment(payload: import('../types/appointment').CreateAppointmentPayload): Promise<import('../types/appointment').Appointment> {
-    const res = await fetch(`${API_BASE_URL}/appointments`, {
+    const res = await safeFetch(`${API_BASE_URL}/appointments`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(payload),
@@ -215,7 +228,7 @@ class ApiClient {
   }
 
   async getMyAppointments(): Promise<import('../types/appointment').Appointment[]> {
-    const res = await fetch(`${API_BASE_URL}/appointments/me`, {
+    const res = await safeFetch(`${API_BASE_URL}/appointments/me`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -223,7 +236,7 @@ class ApiClient {
   }
 
   async cancelAppointment(id: string): Promise<import('../types/appointment').Appointment> {
-    const res = await fetch(`${API_BASE_URL}/appointments/${id}/cancel`, {
+    const res = await safeFetch(`${API_BASE_URL}/appointments/${id}/cancel`, {
       method: 'PATCH',
       headers: this.getHeaders(),
     });
@@ -231,7 +244,7 @@ class ApiClient {
   }
 
   async getCounselorAppointments(): Promise<import('../types/appointment').Appointment[]> {
-    const res = await fetch(`${API_BASE_URL}/counselor/appointments`, {
+    const res = await safeFetch(`${API_BASE_URL}/counselor/appointments`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -242,7 +255,7 @@ class ApiClient {
     id: string,
     status: 'CONFIRMED' | 'CANCELLED',
   ): Promise<import('../types/appointment').Appointment> {
-    const res = await fetch(`${API_BASE_URL}/counselor/appointments/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/counselor/appointments/${id}`, {
       method: 'PATCH',
       headers: this.getHeaders(),
       body: JSON.stringify({ status }),
@@ -252,7 +265,7 @@ class ApiClient {
 
   // 10.2 & 10.4: Quản lý tài nguyên cho Counselor
   async createResource(payload: import('../types/resource').CreateResourcePayload): Promise<import('../types/resource').ResourceItem> {
-    const res = await fetch(`${API_BASE_URL}/resources`, {
+    const res = await safeFetch(`${API_BASE_URL}/resources`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(payload),
@@ -264,7 +277,7 @@ class ApiClient {
     id: string,
     payload: import('../types/resource').UpdateResourcePayload,
   ): Promise<import('../types/resource').ResourceItem> {
-    const res = await fetch(`${API_BASE_URL}/resources/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/resources/${id}`, {
       method: 'PATCH',
       headers: this.getHeaders(),
       body: JSON.stringify(payload),
@@ -273,7 +286,7 @@ class ApiClient {
   }
 
   async deleteResource(id: string): Promise<{ message: string }> {
-    const res = await fetch(`${API_BASE_URL}/resources/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/resources/${id}`, {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
@@ -284,7 +297,7 @@ class ApiClient {
   // Module 11: Admin Endpoints
   // ==========================================
   async getAdminUsers(): Promise<{ total: number; users: import('../types/admin').AdminUser[] }> {
-    const res = await fetch(`${API_BASE_URL}/admin/users`, {
+    const res = await safeFetch(`${API_BASE_URL}/admin/users`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -292,7 +305,7 @@ class ApiClient {
   }
 
   async createAdminCounselor(payload: { email: string; fullName: string; password: string }): Promise<import('../types/admin').AdminUser> {
-    const res = await fetch(`${API_BASE_URL}/admin/counselors`, {
+    const res = await safeFetch(`${API_BASE_URL}/admin/counselors`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(payload),
@@ -301,7 +314,7 @@ class ApiClient {
   }
 
   async updateAdminUserRole(id: string, role: import('../types/auth').Role): Promise<import('../types/admin').AdminUser> {
-    const res = await fetch(`${API_BASE_URL}/admin/users/${id}/role`, {
+    const res = await safeFetch(`${API_BASE_URL}/admin/users/${id}/role`, {
       method: 'PATCH',
       headers: this.getHeaders(),
       body: JSON.stringify({ role }),
@@ -310,7 +323,7 @@ class ApiClient {
   }
 
   async updateAdminUserStatus(id: string, isActive: boolean): Promise<import('../types/admin').AdminUser> {
-    const res = await fetch(`${API_BASE_URL}/admin/users/${id}/status`, {
+    const res = await safeFetch(`${API_BASE_URL}/admin/users/${id}/status`, {
       method: 'PATCH',
       headers: this.getHeaders(),
       body: JSON.stringify({ isActive }),
@@ -319,7 +332,7 @@ class ApiClient {
   }
 
   async getAdminAlertRules(): Promise<import('../types/admin').AdminAlertRule[]> {
-    const res = await fetch(`${API_BASE_URL}/admin/alert-rules`, {
+    const res = await safeFetch(`${API_BASE_URL}/admin/alert-rules`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -334,7 +347,7 @@ class ApiClient {
     level: string;
     isActive?: boolean;
   }): Promise<import('../types/admin').AdminAlertRule> {
-    const res = await fetch(`${API_BASE_URL}/admin/alert-rules`, {
+    const res = await safeFetch(`${API_BASE_URL}/admin/alert-rules`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(payload),
@@ -346,7 +359,7 @@ class ApiClient {
     id: string,
     payload: Partial<import('../types/admin').AdminAlertRule>,
   ): Promise<import('../types/admin').AdminAlertRule> {
-    const res = await fetch(`${API_BASE_URL}/admin/alert-rules/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/admin/alert-rules/${id}`, {
       method: 'PATCH',
       headers: this.getHeaders(),
       body: JSON.stringify(payload),
@@ -355,7 +368,7 @@ class ApiClient {
   }
 
   async deleteAdminAlertRule(id: string): Promise<{ message: string; id: string }> {
-    const res = await fetch(`${API_BASE_URL}/admin/alert-rules/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/admin/alert-rules/${id}`, {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
@@ -363,7 +376,7 @@ class ApiClient {
   }
 
   async getAdminStats(): Promise<import('../types/admin').AdminStats> {
-    const res = await fetch(`${API_BASE_URL}/admin/stats`, {
+    const res = await safeFetch(`${API_BASE_URL}/admin/stats`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -371,7 +384,7 @@ class ApiClient {
   }
 
   async getAdminResources(): Promise<import('../types/admin').AdminResource[]> {
-    const res = await fetch(`${API_BASE_URL}/admin/resources`, {
+    const res = await safeFetch(`${API_BASE_URL}/admin/resources`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -379,7 +392,7 @@ class ApiClient {
   }
 
   async updateAdminResourceVisibility(id: string, isPublished: boolean): Promise<import('../types/admin').AdminResource> {
-    const res = await fetch(`${API_BASE_URL}/admin/resources/${id}/visibility`, {
+    const res = await safeFetch(`${API_BASE_URL}/admin/resources/${id}/visibility`, {
       method: 'PATCH',
       headers: this.getHeaders(),
       body: JSON.stringify({ isPublished }),
@@ -388,7 +401,7 @@ class ApiClient {
   }
 
   async deleteAdminResource(id: string): Promise<{ message: string; id: string }> {
-    const res = await fetch(`${API_BASE_URL}/admin/resources/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/admin/resources/${id}`, {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
@@ -399,7 +412,7 @@ class ApiClient {
   // Module 13: Conversation & Messaging Endpoints
   // ==========================================
   async createConversation(counselorId: string): Promise<import('../types/conversation').Conversation> {
-    const res = await fetch(`${API_BASE_URL}/conversations`, {
+    const res = await safeFetch(`${API_BASE_URL}/conversations`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({ counselorId }),
@@ -408,7 +421,7 @@ class ApiClient {
   }
 
   async getConversations(): Promise<import('../types/conversation').Conversation[]> {
-    const res = await fetch(`${API_BASE_URL}/conversations`, {
+    const res = await safeFetch(`${API_BASE_URL}/conversations`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -419,7 +432,7 @@ class ApiClient {
     id: string,
     status: import('../types/conversation').ConversationStatus,
   ): Promise<import('../types/conversation').Conversation> {
-    const res = await fetch(`${API_BASE_URL}/conversations/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/conversations/${id}`, {
       method: 'PATCH',
       headers: this.getHeaders(),
       body: JSON.stringify({ status }),
@@ -432,7 +445,7 @@ class ApiClient {
     page: number = 1,
     limit: number = 50,
   ): Promise<import('../types/conversation').MessagesResponse> {
-    const res = await fetch(`${API_BASE_URL}/conversations/${id}/messages?page=${page}&limit=${limit}`, {
+    const res = await safeFetch(`${API_BASE_URL}/conversations/${id}/messages?page=${page}&limit=${limit}`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -440,7 +453,7 @@ class ApiClient {
   }
 
   async sendMessage(id: string, content: string): Promise<import('../types/conversation').Message> {
-    const res = await fetch(`${API_BASE_URL}/conversations/${id}/messages`, {
+    const res = await safeFetch(`${API_BASE_URL}/conversations/${id}/messages`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({ content }),
@@ -449,7 +462,7 @@ class ApiClient {
   }
 
   async markConversationAsRead(id: string): Promise<{ success: boolean; readAt: string }> {
-    const res = await fetch(`${API_BASE_URL}/conversations/${id}/read`, {
+    const res = await safeFetch(`${API_BASE_URL}/conversations/${id}/read`, {
       method: 'PATCH',
       headers: this.getHeaders(),
     });
@@ -458,7 +471,7 @@ class ApiClient {
 
   // --- Activities (Module 14) ---
   async getTodayActivities(): Promise<import('../types/activity').TodayActivitiesResponse> {
-    const res = await fetch(`${API_BASE_URL}/activities/today`, {
+    const res = await safeFetch(`${API_BASE_URL}/activities/today`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -466,7 +479,7 @@ class ApiClient {
   }
 
   async getActivitiesStreak(): Promise<import('../types/activity').ActivityStreakResponse> {
-    const res = await fetch(`${API_BASE_URL}/activities/streak`, {
+    const res = await safeFetch(`${API_BASE_URL}/activities/streak`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -474,7 +487,7 @@ class ApiClient {
   }
 
   async completeActivity(id: string): Promise<import('../types/activity').DailyActivity> {
-    const res = await fetch(`${API_BASE_URL}/activities/${id}/complete`, {
+    const res = await safeFetch(`${API_BASE_URL}/activities/${id}/complete`, {
       method: 'POST',
       headers: this.getHeaders(),
     });
@@ -482,7 +495,7 @@ class ApiClient {
   }
 
   async uncompleteActivity(id: string): Promise<import('../types/activity').DailyActivity> {
-    const res = await fetch(`${API_BASE_URL}/activities/${id}/complete`, {
+    const res = await safeFetch(`${API_BASE_URL}/activities/${id}/complete`, {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
@@ -490,7 +503,7 @@ class ApiClient {
   }
 
   async swapActivity(id: string): Promise<{ activity: import('../types/activity').DailyActivity; swapsRemaining: number }> {
-    const res = await fetch(`${API_BASE_URL}/activities/${id}/swap`, {
+    const res = await safeFetch(`${API_BASE_URL}/activities/${id}/swap`, {
       method: 'POST',
       headers: this.getHeaders(),
     });
@@ -501,7 +514,7 @@ class ApiClient {
   // Module 15: Session Briefs Endpoints
   // ==========================================
   async previewBrief(payload: import('../types/brief').CreateBriefPreviewPayload): Promise<import('../types/brief').BriefPreviewResponse> {
-    const res = await fetch(`${API_BASE_URL}/briefs/preview`, {
+    const res = await safeFetch(`${API_BASE_URL}/briefs/preview`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(payload),
@@ -510,7 +523,7 @@ class ApiClient {
   }
 
   async createBrief(payload: import('../types/brief').CreateBriefPayload): Promise<import('../types/brief').SessionBrief> {
-    const res = await fetch(`${API_BASE_URL}/briefs`, {
+    const res = await safeFetch(`${API_BASE_URL}/briefs`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify(payload),
@@ -519,7 +532,7 @@ class ApiClient {
   }
 
   async revokeBrief(id: string): Promise<import('../types/brief').SessionBrief> {
-    const res = await fetch(`${API_BASE_URL}/briefs/${id}`, {
+    const res = await safeFetch(`${API_BASE_URL}/briefs/${id}`, {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
@@ -528,7 +541,7 @@ class ApiClient {
 
   async downloadBriefPdf(id: string): Promise<void> {
     const activeToken = localStorage.getItem('mindlog_token');
-    const res = await fetch(`${API_BASE_URL}/briefs/${id}/pdf`, {
+    const res = await safeFetch(`${API_BASE_URL}/briefs/${id}/pdf`, {
       method: 'GET',
       headers: {
         ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
@@ -552,7 +565,7 @@ class ApiClient {
   }
 
   async getAppointmentBrief(appointmentId: string): Promise<import('../types/brief').CounselorBriefResponse> {
-    const res = await fetch(`${API_BASE_URL}/appointments/${appointmentId}/brief`, {
+    const res = await safeFetch(`${API_BASE_URL}/appointments/${appointmentId}/brief`, {
       method: 'GET',
       headers: this.getHeaders(),
     });

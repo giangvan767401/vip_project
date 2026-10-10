@@ -20,5 +20,5 @@
     "noFallthroughCasesInSwitch": true,
     "rootDir": "src"
   },
-  "exclude": ["node_modules", "dist", "prisma"]
+  "exclude": ["node_modules", "dist", "prisma", "test"]
 }

@@ -774,6 +774,89 @@ Tất cả các endpoint trong mục này bắt buộc có Bearer Token và Role
   - `conversation:status_changed`: Cập nhật trạng thái PENDING / ACTIVE / CLOSED.
   - `alert:prolonged`: Cảnh báo cảm xúc tiêu cực kéo dài (dành cho counselor có ConsentShare ACTIVE).
 
+### 2.12. Hoạt động nhỏ mỗi ngày (`/activities`)
+
+#### A. Lấy việc nhỏ hôm nay
+- **Method**: `GET`
+- **Endpoint**: `/activities/today`
+- **Truy cập**: Role `USER`
+- **Mô tả**: Sinh hoặc lấy lại 3 việc nhỏ phù hợp với mức cảnh báo cảm xúc hiện tại (`/alerts/me`). Gọi lại trong ngày trả cùng danh sách. Không trùng lặp việc của ngày hôm qua.
+- **Response `200 OK`**:
+  ```json
+  {
+    "today": "2026-10-10",
+    "alertLevel": "binh_thuong",
+    "swapsRemaining": 2,
+    "activities": [
+      {
+        "id": "cm...cuid",
+        "userId": "cm...cuid",
+        "templateId": "cm...cuid",
+        "date": "2026-10-10T00:00:00.000Z",
+        "completedAt": null,
+        "template": {
+          "id": "cm...cuid",
+          "title": "Uống một ly nước ấm",
+          "description": "Rót một cốc nước ấm, nhấp từng ngụm chậm rãi...",
+          "category": "PHYSICAL",
+          "level": "all",
+          "durationMin": 2
+        }
+      }
+    ]
+  }
+  ```
+
+#### B. Đánh dấu hoàn thành việc nhỏ
+- **Method**: `POST`
+- **Endpoint**: `/activities/:id/complete`
+- **Truy cập**: Role `USER` (chỉ việc của chính mình)
+- **Response `200 OK`**: Bản ghi `DailyActivity` với `completedAt` được cập nhật thời gian hiện tại.
+
+#### C. Bỏ đánh dấu hoàn thành
+- **Method**: `DELETE`
+- **Endpoint**: `/activities/:id/complete`
+- **Truy cập**: Role `USER` (chỉ việc của chính mình)
+- **Response `200 OK`**: Bản ghi `DailyActivity` với `completedAt: null`.
+
+#### D. Đổi việc khác (tối đa 2 lần/ngày)
+- **Method**: `POST`
+- **Endpoint**: `/activities/:id/swap`
+- **Truy cập**: Role `USER` (chỉ trong ngày hôm nay)
+- **Mô tả**: Chọn ngẫu nhiên 1 hoạt động khác phù hợp cùng mức cảm xúc chưa có trong ngày. Giới hạn tối đa 2 lần đổi/ngày.
+- **Response `200 OK`**:
+  ```json
+  {
+    "activity": { "id": "...", "template": { ... } },
+    "swapsRemaining": 1
+  }
+  ```
+- **Lỗi thường gặp**:
+  - `400 Bad Request`: Đã dùng hết 2 lượt đổi trong ngày, hoặc hoạt động không thuộc ngày hôm nay.
+
+#### E. Lấy chuỗi ngày liên tiếp (Streak)
+- **Method**: `GET`
+- **Endpoint**: `/activities/streak`
+- **Truy cập**: Role `USER`
+- **Mô tả**: Tính chuỗi ngày liên tiếp hoàn thành (≥ 1 việc/ngày) theo múi giờ `Asia/Ho_Chi_Minh`. Hôm nay chưa xong không phá chuỗi. Trả kèm lịch sử 30 ngày.
+- **Response `200 OK`**:
+  ```json
+  {
+    "currentStreak": 3,
+    "maxStreak": 5,
+    "isTodayCompleted": false,
+    "totalCompletedAllTime": 12,
+    "recentHistory": [
+      {
+        "date": "2026-10-10",
+        "total": 3,
+        "completed": 0,
+        "isSuccess": false
+      }
+    ]
+  }
+  ```
+
 ---
 
 ## 3. Database Schema Models (Prisma)
@@ -786,6 +869,9 @@ Tất cả các endpoint trong mục này bắt buộc có Bearer Token và Role
 - **Appointment**: `id`, `userId`, `counselorId`, `startAt`, `note`, `status` (`PENDING` | `CONFIRMED` | `CANCELLED`), `createdAt`, `updatedAt`.
 - **Conversation**: `id`, `userId`, `counselorId`, `status` (`PENDING` | `ACTIVE` | `CLOSED`), `createdAt`, `updatedAt`.
 - **Message**: `id`, `conversationId`, `senderId`, `content` (Text), `createdAt`, `readAt`.
+- **ActivityTemplate**: `id`, `title`, `description` (Text), `category`, `level` (`all` | `binh_thuong` | `nhe` | `vua` | `keo_dai`), `durationMin`, `isActive` (Boolean), `createdAt`, `updatedAt`.
+- **DailyActivity**: `id`, `userId`, `templateId`, `date` (Date), `completedAt` (DateTime?), `createdAt`, `updatedAt`. Unique (`userId`, `templateId`, `date`).
+- **ActivityDailySwap**: `id`, `userId`, `date` (Date), `count` (Int default 0), `createdAt`, `updatedAt`. Unique (`userId`, `date`).
 
 ---
 

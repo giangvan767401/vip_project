@@ -455,6 +455,47 @@ class ApiClient {
     });
     return this.handleResponse<{ success: boolean; readAt: string }>(res);
   }
+
+  // --- Activities (Module 14) ---
+  async getTodayActivities(): Promise<import('../types/activity').TodayActivitiesResponse> {
+    const res = await fetch(`${API_BASE_URL}/activities/today`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<import('../types/activity').TodayActivitiesResponse>(res);
+  }
+
+  async getActivitiesStreak(): Promise<import('../types/activity').ActivityStreakResponse> {
+    const res = await fetch(`${API_BASE_URL}/activities/streak`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<import('../types/activity').ActivityStreakResponse>(res);
+  }
+
+  async completeActivity(id: string): Promise<import('../types/activity').DailyActivity> {
+    const res = await fetch(`${API_BASE_URL}/activities/${id}/complete`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<import('../types/activity').DailyActivity>(res);
+  }
+
+  async uncompleteActivity(id: string): Promise<import('../types/activity').DailyActivity> {
+    const res = await fetch(`${API_BASE_URL}/activities/${id}/complete`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<import('../types/activity').DailyActivity>(res);
+  }
+
+  async swapActivity(id: string): Promise<{ activity: import('../types/activity').DailyActivity; swapsRemaining: number }> {
+    const res = await fetch(`${API_BASE_URL}/activities/${id}/swap`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<{ activity: import('../types/activity').DailyActivity; swapsRemaining: number }>(res);
+  }
 }
 
 export const api = new ApiClient();

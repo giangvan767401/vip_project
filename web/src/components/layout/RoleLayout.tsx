@@ -14,6 +14,7 @@ import {
   Settings,
   Calendar,
   MessageSquare,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface RoleLayoutProps {
@@ -60,6 +61,7 @@ export const RoleLayout: React.FC<RoleLayoutProps> = ({ children }) => {
       default:
         return [
           { to: '/student/dashboard', label: 'Tổng quan cảm xúc', icon: LayoutDashboard },
+          { to: '/student/activities', label: 'Hoạt động nhỏ', icon: CheckCircle2 },
           { to: '/student/checkin', label: 'Nhận diện Webcam', icon: Camera },
           { to: '/student/journal', label: 'Nhật ký cá nhân', icon: BookOpen },
           { to: '/student/messages', label: 'Tin nhắn tư vấn', icon: MessageSquare },

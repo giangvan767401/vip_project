@@ -25,7 +25,10 @@ import {
   PhoneCall,
   ShieldAlert,
   CheckCircle2,
+  Circle,
+  Flame,
 } from 'lucide-react';
+import { DailyActivity, ActivityStreakResponse } from '../types/activity';
 import {
   ResponsiveContainer,
   LineChart,
@@ -59,6 +62,9 @@ export const StudentDashboardPage: React.FC = () => {
   const [summaryData, setSummaryData] = useState<EmotionSummaryData | null>(null);
   const [alertData, setAlertData] = useState<UserAlert | null>(null);
   const [resources, setResources] = useState<ResourceItem[]>([]);
+  const [activities, setActivities] = useState<DailyActivity[]>([]);
+  const [streakData, setStreakData] = useState<ActivityStreakResponse | null>(null);
+  const [activityLoadingId, setActivityLoadingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,12 +72,16 @@ export const StudentDashboardPage: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const [sum, alertRes] = await Promise.all([
+      const [sum, alertRes, actRes, streakRes] = await Promise.all([
         api.getEmotionSummary(selectedRange),
         api.getAlert(),
+        api.getTodayActivities().catch(() => ({ activities: [] } as any)),
+        api.getActivitiesStreak().catch(() => null),
       ]);
       setSummaryData(sum);
       setAlertData(alertRes);
+      setActivities(actRes?.activities || []);
+      setStreakData(streakRes);
 
       // Lấy tài nguyên phù hợp với level cảnh báo
       const resItems = await api.getResources(alertRes.level);
@@ -80,6 +90,32 @@ export const StudentDashboardPage: React.FC = () => {
       setError(err?.message || 'Không thể tải dữ liệu thống kê');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleToggleActivity = async (act: DailyActivity) => {
+    const isCompleted = !!act.completedAt;
+    setActivityLoadingId(act.id);
+    setActivities((prev) =>
+      prev.map((a) =>
+        a.id === act.id
+          ? { ...a, completedAt: isCompleted ? null : new Date().toISOString() }
+          : a,
+      ),
+    );
+    try {
+      if (isCompleted) {
+        await api.uncompleteActivity(act.id);
+      } else {
+        await api.completeActivity(act.id);
+      }
+      const newStreak = await api.getActivitiesStreak();
+      setStreakData(newStreak);
+    } catch (err) {
+      console.error('Lỗi toggle activity trên dashboard:', err);
+      setActivities((prev) => prev.map((a) => (a.id === act.id ? act : a)));
+    } finally {
+      setActivityLoadingId(null);
     }
   };
 
@@ -329,6 +365,133 @@ export const StudentDashboardPage: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* --- MODULE 14.3: THẺ VIỆC NHỎ HÔM NAY --- */}
+        <div
+          className="glass-card"
+          style={{
+            padding: '20px 24px',
+            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%)',
+            border: '1px solid rgba(99, 102, 241, 0.25)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <CheckCircle2 size={20} color="#10b981" />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>
+                  Việc nhỏ hôm nay
+                </h3>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Những bước nhỏ giúp bạn lấy lại sự cân bằng
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {streakData && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '4px 10px',
+                    borderRadius: '9999px',
+                    background: streakData.currentStreak > 0 ? 'rgba(249, 115, 22, 0.15)' : 'rgba(148, 163, 184, 0.1)',
+                    border: `1px solid ${streakData.currentStreak > 0 ? 'rgba(249, 115, 22, 0.3)' : 'rgba(148, 163, 184, 0.2)'}`,
+                    color: streakData.currentStreak > 0 ? '#f97316' : 'var(--text-muted)',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  <Flame size={14} /> Chuỗi {streakData.currentStreak} ngày
+                </span>
+              )}
+              <Link
+                to="/student/activities"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  color: '#818cf8',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                Xem chi tiết & đổi việc <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
+
+          {/* Activities List */}
+          {activities.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
+              {activities.map((act) => {
+                const isCompleted = !!act.completedAt;
+                const isBusy = activityLoadingId === act.id;
+                return (
+                  <div
+                    key={act.id}
+                    onClick={() => !isBusy && handleToggleActivity(act)}
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: '12px',
+                      background: isCompleted ? 'rgba(16, 185, 129, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                      border: isCompleted ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(255, 255, 255, 0.08)',
+                      cursor: isBusy ? 'wait' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{ color: isCompleted ? '#34d399' : 'var(--text-muted)', flexShrink: 0 }}>
+                      {isCompleted ? <CheckCircle2 size={20} /> : <Circle size={20} />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: '0.88rem',
+                          fontWeight: 600,
+                          color: isCompleted ? '#94a3b8' : '#fff',
+                          textDecoration: isCompleted ? 'line-through' : 'none',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {act.template.title}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: '8px' }}>
+                        <span>⏱️ {act.template.durationMin} phút</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              Đang tải việc nhỏ cho hôm nay...
+            </div>
+          )}
+        </div>
 
         {/* Range Controls & Status */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>

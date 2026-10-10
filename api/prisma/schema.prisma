@@ -43,6 +43,8 @@ model User {
   conversationsStudent  Conversation[] @relation("UserConversations")
   conversationsCounselor Conversation[] @relation("CounselorConversations")
   messagesSent          Message[]      @relation("SentMessages")
+  dailyActivities       DailyActivity[]
+  activityDailySwaps    ActivityDailySwap[]
 
   @@map("users")
 }
@@ -196,6 +198,53 @@ model Message {
   @@index([senderId])
   @@index([createdAt])
   @@map("messages")
+}
+
+model ActivityTemplate {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  category    String   // PHYSICAL, MINDFUL, SOCIAL, CREATIVE, SELF_CARE
+  level       String   @default("all") // all, binh_thuong, nhe, vua, keo_dai
+  durationMin Int      @default(5)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  dailyActivities DailyActivity[]
+
+  @@map("activity_templates")
+}
+
+model DailyActivity {
+  id          String    @id @default(cuid())
+  userId      String
+  templateId  String
+  date        DateTime  @db.Date
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template ActivityTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, templateId, date])
+  @@index([userId, date])
+  @@map("daily_activities")
+}
+
+model ActivityDailySwap {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @db.Date
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("activity_daily_swaps")
 }
 
 

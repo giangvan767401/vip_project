@@ -28,9 +28,9 @@ Thứ tự làm: 11 → 13 → 14 → 12
 - [x] 13.4 `web/`: trang Tin nhắn cho Counselor (yêu cầu chờ duyệt, chấp nhận/đóng, khung chat realtime)
 
 ### Module 14: Hoạt động nhỏ mỗi ngày
-- [ ] 14.1 `api/`: Prisma `ActivityTemplate` (title, description, category, level NHẸ/VỪA/KÉO DÀI, durationMin, active) và `DailyActivity` (userId, templateId, date, completedAt; unique userId+templateId+date); seed ≥ 20 hoạt động (đi bộ 10 phút, gọi bạn, dọn bàn...)
-- [ ] 14.2 `api/`: `GET /activities/today` (tạo 3–5 việc theo mức cảnh báo hiện tại, gọi lại trong ngày trả cùng danh sách, không lặp danh sách hôm qua), `POST /activities/:id/complete`, `DELETE /activities/:id/complete` (bỏ tick), `POST /activities/:id/swap` (đổi việc, tối đa 1–2 lần/ngày), `GET /activities/streak`
-- [ ] 14.3 `web/`: thẻ "Việc nhỏ hôm nay" trên Dashboard + trang Hoạt động (tick, chuỗi ngày, lịch 7/30 ngày gần nhất)
+- [x] 14.1 `api/`: Prisma `ActivityTemplate` (title, description, category, level NHẸ/VỪA/KÉO DÀI, durationMin, active) và `DailyActivity` (userId, templateId, date, completedAt; unique userId+templateId+date); seed 25 hoạt động mẫu đa dạng danh mục
+- [x] 14.2 `api/`: `GET /activities/today` (tạo 3 việc theo mức cảnh báo hiện tại, gọi lại trong ngày trả cùng danh sách, không lặp hôm qua), `POST /activities/:id/complete`, `DELETE /activities/:id/complete` (bỏ tick), `POST /activities/:id/swap` (đổi việc, tối đa 2 lần/ngày), `GET /activities/streak` (chuỗi ngày theo giờ VN, hôm nay chưa xong không phá chuỗi)
+- [x] 14.3 `web/`: thẻ "Việc nhỏ hôm nay" trên Dashboard + trang Hoạt động đầy đủ (tick hoàn thành, chuỗi streak, lịch 7/30 ngày, đổi việc, lời động viên theo ngữ cảnh)
 
 ### Module 12: Hoàn thiện (làm sau 11, 13, 14)
 - [ ] 12.1 Test luồng chính: đăng ký → check-in → dashboard → cảnh báo → chia sẻ → counselor xem → thu hồi → 403; thêm luồng nhắn tin và hoạt động nhỏ
@@ -57,5 +57,6 @@ Thứ tự làm: 11 → 13 → 14 → 12
 ## Endpoint đã có (tóm tắt, điền theo thực tế)
 - /auth/*, /emotion-logs (+ /summary), /journal-entries, /alerts/me, /resources
 - /counselors, /consents/*, /me/export, /me/data, /counselor/*, /appointments/*, /conversations/*
+- /activities/* (`/today`, `/:id/complete`, `/:id/swap`, `/streak`)
 - WS (`app.py`): cần JWT, nhận frame, trả `{emotion, scores}`
 - Socket.IO (`api`): verify JWT, `alert:prolonged`, rooms `conversation_*`, `message:new`, `message:read`

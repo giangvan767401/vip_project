@@ -348,11 +348,59 @@ async function main() {
     ],
   });
 
+  // 6. Seed lịch hẹn và user chưa đủ dữ liệu cho Module 15 (Briefs)
+  const counselor1 = await prisma.user.findUnique({ where: { email: 'counselor@example.com' } });
+  if (counselor1) {
+    await prisma.sessionBrief.deleteMany({ where: { userId: user.id } });
+    await prisma.appointment.deleteMany({ where: { userId: user.id } });
+
+    // Tạo lịch hẹn CONFIRMED cho demo@example.com
+    const apptDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    const demoAppt = await prisma.appointment.create({
+      data: {
+        userId: user.id,
+        counselorId: counselor1.id,
+        startAt: apptDate,
+        status: 'CONFIRMED',
+        note: 'Em muốn trao đổi về áp lực học tập và mất ngủ gần đây ạ.',
+      },
+    });
+    console.log(`📅 Lịch hẹn demo: ID=${demoAppt.id} với ${counselor1.fullName}`);
+
+    // Tạo lịch hẹn CANCELLED để test
+    const cancelledAppt = await prisma.appointment.create({
+      data: {
+        userId: user.id,
+        counselorId: counselor1.id,
+        startAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+        status: 'CANCELLED',
+        note: 'Lịch hẹn đã hủy.',
+      },
+    });
+    console.log(`📅 Lịch hẹn CANCELLED demo: ID=${cancelledAppt.id}`);
+  }
+
+  // User mới chỉ có 2 ngày dữ liệu
+  const shortUser = await prisma.user.upsert({
+    where: { email: 'short_user@example.com' },
+    update: { fullName: 'Sinh viên Mới (Chưa đủ 7 ngày)', password: hashedPassword, role: Role.USER },
+    create: { email: 'short_user@example.com', fullName: 'Sinh viên Mới (Chưa đủ 7 ngày)', password: hashedPassword, role: Role.USER },
+  });
+  await prisma.emotionLog.deleteMany({ where: { userId: shortUser.id } });
+  await prisma.emotionLog.createMany({
+    data: [
+      { userId: shortUser.id, emotion: 'Neutral', positiveScore: 50, negativeScore: 20, createdAt: new Date() },
+      { userId: shortUser.id, emotion: 'Happy', positiveScore: 70, negativeScore: 10, createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+    ],
+  });
+  console.log(`👤 User mới (chưa đủ 7 ngày): short_user@example.com / password123`);
+
   console.log(`✅ Seed thành công:`);
   console.log(`   - ${logCount} bản ghi EmotionLog (16 ngày, gồm chuỗi 5 ngày tiêu cực liên tiếp)`);
   console.log(`   - ${journalCount} bài viết JournalEntry`);
   console.log(`   - 3 AlertRules và 6 Resources`);
   console.log(`   - User login: demo@example.com / password123`);
+  console.log(`   - Counselor login: counselor@example.com / password123, counselor2@example.com / password123`);
 }
 
 main()

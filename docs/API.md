@@ -859,6 +859,108 @@ Tất cả các endpoint trong mục này bắt buộc có Bearer Token và Role
 
 ---
 
+### 2.14. Chuẩn bị buổi tư vấn (Session Briefs)
+
+#### A. Xem trước bản nháp tóm tắt tư vấn (Preview)
+- **Method**: `POST`
+- **Endpoint**: `/briefs/preview`
+- **Truy cập**: Role `USER`
+- **Request Body**:
+  ```json
+  {
+    "rangeDays": 14,
+    "sections": {
+      "includeTrend": true,
+      "includeNegativeDays": true,
+      "includeDifficultHours": true,
+      "includeActivities": true,
+      "includeJournalNotes": true
+    },
+    "userNote": "Em dạo này cảm thấy lo lắng nhiều vào ban đêm."
+  }
+  ```
+- **Response `200 OK`**:
+  ```json
+  {
+    "rangeDays": 14,
+    "sections": { ... },
+    "userNote": "...",
+    "snapshot": {
+      "rangeDays": 14,
+      "dateFrom": "2026-09-26",
+      "dateTo": "2026-10-10",
+      "disclaimer": "Dữ liệu do sinh viên chọn chia sẻ từ nhật ký cá nhân...",
+      "trend": {
+        "avgPositiveScore": 48.2,
+        "avgNegativeScore": 35.6,
+        "dominantEmotion": "Neutral",
+        "totalCheckIns": 16,
+        "dailyStats": [ ... ]
+      },
+      "negativeDays": {
+        "totalEvaluatedDays": 15,
+        "negativeDaysCount": 5,
+        "negativeRatioPercent": 33.3,
+        "description": "Có 5/15 ngày (33.3%) điểm tiêu cực vượt ngưỡng trung bình."
+      },
+      "difficultHours": {
+        "mostDifficultSlot": "Tối (18:00 - 21:59)",
+        "recommendation": "Khung giờ này thường có điểm căng thẳng cao hơn..."
+      },
+      "activities": {
+        "totalCompleted": 4,
+        "items": [ ... ]
+      },
+      "journalNotes": [ ... ]
+    }
+  }
+  ```
+- **Lỗi thường gặp**:
+  - `400 Bad Request`: "Chưa đủ dữ liệu: Cần ít nhất 7 ngày ghi nhận cảm xúc để tạo tóm tắt buổi tư vấn" (khi user có < 7 ngày log).
+
+#### B. Gắn bản tóm tắt vào lịch hẹn
+- **Method**: `POST`
+- **Endpoint**: `/briefs`
+- **Truy cập**: Role `USER`
+- **Request Body**:
+  ```json
+  {
+    "appointmentId": "cmv21am7x001svme0kblq068j",
+    "rangeDays": 14,
+    "sections": { ... },
+    "userNote": "Em muốn trao đổi về đồ án và áp lực học tập."
+  }
+  ```
+- **Mô tả**: Lưu snapshot đóng băng tại thời điểm xác nhận (snapshot bất biến không đổi khi user ghi thêm dữ liệu mới). Tính `expiresAt = giờ kết thúc hẹn + 7 ngày`.
+- **Response `201 Created`**: Trả về `SessionBrief` đã tạo kèm thông tin lịch hẹn.
+- **Lỗi thường gặp**:
+  - `400 Bad Request`: Lịch hẹn đã bị hủy (`CANCELLED`).
+  - `403 Forbidden`: Lịch hẹn không phải của chính user.
+  - `409 Conflict`: Lịch hẹn này đã có tóm tắt tư vấn gắn vào.
+
+#### C. Sinh viên thu hồi tóm tắt ngay lập tức
+- **Method**: `DELETE`
+- **Endpoint**: `/briefs/:id`
+- **Truy cập**: Role `USER` (chỉ chủ sở hữu brief)
+- **Mô tả**: Cập nhật `revokedAt = new Date()`. Counselor bị chặn `403 Forbidden` ngay lập tức khi truy cập lịch hẹn.
+
+#### D. Counselor xem tóm tắt của đúng lịch hẹn
+- **Method**: `GET`
+- **Endpoint**: `/appointments/:id/brief`
+- **Truy cập**: Role `COUNSELOR` (chỉ đúng Counselor của lịch hẹn chỉ định)
+- **Kiểm tra phân quyền**:
+  - Counselor khác, User, Admin đều trả về `403 Forbidden`.
+  - Tóm tắt đã bị thu hồi (`revokedAt != null`) hoặc đã hết hạn (`now > expiresAt`) trả về `403 Forbidden`.
+  - Không mở thêm quyền truy vấn nào ngoài dữ liệu đã đóng băng trong `snapshot`.
+
+#### E. Sinh viên xuất PDF tóm tắt của chính mình
+- **Method**: `GET`
+- **Endpoint**: `/briefs/:id/pdf`
+- **Truy cập**: Role `USER` (chỉ chính user sở hữu brief)
+- **Response**: Stream file PDF định dạng A4, hỗ trợ tiếng Việt (font Unicode), header `Content-Type: application/pdf`, `Content-Disposition: attachment; filename="mindlog-session-brief-<id>.pdf"`.
+
+---
+
 ## 3. Database Schema Models (Prisma)
 - **User**: `id`, `email`, `password` (hashed with bcrypt), `fullName`, `role` (`USER` | `COUNSELOR` | `ADMIN`), `isActive` (Boolean), `createdAt`, `updatedAt`.
 - **EmotionLog**: `id`, `userId`, `emotion`, `positiveScore` (Float), `negativeScore` (Float), `scores` (Json), `startedAt` (DateTime), `endedAt` (DateTime), `note` (Text), `createdAt` (DateTime).
@@ -872,6 +974,7 @@ Tất cả các endpoint trong mục này bắt buộc có Bearer Token và Role
 - **ActivityTemplate**: `id`, `title`, `description` (Text), `category`, `level` (`all` | `binh_thuong` | `nhe` | `vua` | `keo_dai`), `durationMin`, `isActive` (Boolean), `createdAt`, `updatedAt`.
 - **DailyActivity**: `id`, `userId`, `templateId`, `date` (Date), `completedAt` (DateTime?), `createdAt`, `updatedAt`. Unique (`userId`, `templateId`, `date`).
 - **ActivityDailySwap**: `id`, `userId`, `date` (Date), `count` (Int default 0), `createdAt`, `updatedAt`. Unique (`userId`, `date`).
+- **SessionBrief**: `id`, `userId`, `appointmentId` (@unique), `rangeDays` (Int default 7), `sections` (Json), `userNote` (Text?), `snapshot` (Json), `expiresAt` (DateTime), `revokedAt` (DateTime?), `createdAt`, `updatedAt`.
 
 ---
 

@@ -1,62 +1,51 @@
 # PROGRESS – cập nhật sau mỗi task (giữ file < 100 dòng)
 
 ## Trạng thái hiện tại
-Giai đoạn: D – Hoàn thiện (kèm module 13, 14 bổ sung) | Cập nhật lần cuối: YYYY-MM-DD
-Thứ tự làm: 11 → 13 → 14 → 12
+Giai đoạn: D – Hoàn thiện (kèm module 13, 14, 15 bổ sung) | Cập nhật lần cuối: YYYY-MM-DD
+Thứ tự làm: 11 → 13 → 14 → 15 → 12 (chạy local, chưa deploy)
 
 ## Done
 - [x] Demo gốc: `app.py` (FastAPI + WebSocket) + `static/index.html`
-- [x] A (nền tảng): docker-compose MySQL, `.env.example`, CORS; `api/` NestJS + Prisma, Auth JWT + Guard role; `app.py` verify JWT cho WS; `web/` React + TS
-- [x] B (MVP): check-in webcam + `/emotion-logs`; Nhật ký; Dashboard Recharts + seed; cảnh báo rule, `Resource`, bài tập thở, "Cần giúp ngay"
-- [x] C: quyền riêng tư (`ConsentShare`, export/xóa dữ liệu); Counselor (xem theo consent, stats ẩn danh, Socket.IO); lịch hẹn + quản lý tài liệu
+- [x] A: docker-compose MySQL, `.env.example`, CORS; `api/` NestJS + Prisma, Auth JWT + Guard role; `app.py` verify JWT cho WS; `web/` React + TS
+- [x] B (MVP): check-in webcam + `/emotion-logs`; Nhật ký; Dashboard + seed; cảnh báo rule, `Resource`, bài tập thở, "Cần giúp ngay"
+- [x] C: quyền riêng tư (`ConsentShare`, export/xóa); Counselor (xem theo consent, stats ẩn danh, Socket.IO); lịch hẹn + tài liệu
 
 ## In progress
 - (chưa có)
 
 ## Next – Giai đoạn D (làm đúng thứ tự, mỗi lần 1 task nhỏ)
 
-### Module 11: Admin
-- [ ] 11.1 `api/`: Guard ADMIN; `GET /admin/users` (KHÔNG trả dữ liệu cảm xúc/nhật ký/tin nhắn), tạo tài khoản COUNSELOR, đổi role, khóa/mở khóa
-- [ ] 11.2 `api/`: CRUD `AlertRule` (ngưỡng, số ngày xét, mức gợi ý); hàm cảnh báo đọc ngưỡng từ DB
-- [ ] 11.3 `api/`: `GET /admin/stats` (chỉ số tổng hợp, không dữ liệu cá nhân) + xóa/ẩn `Resource` vi phạm
-- [ ] 11.4 `web/`: trang Admin: tài khoản, ngưỡng cảnh báo, thống kê, nội dung
+### Module 15: Chuẩn bị buổi tư vấn (tính năng điểm nhấn)
+- [x] 15.1 `api/`: Prisma `SessionBrief` (userId, appointmentId unique, rangeDays, các mục bật/tắt, userNote, snapshot JSON, expiresAt, revokedAt); `POST /briefs/preview` dựng bản nháp bằng quy tắc/thống kê (xu hướng ngày, số ngày tiêu cực, khung giờ khó nhất, hoạt động/bài tập đã làm); báo "chưa đủ dữ liệu" nếu < 7 ngày
+- [x] 15.2 `api/`: `POST /briefs` gắn vào lịch hẹn của mình (lưu snapshot tại thời điểm xác nhận, hết hạn = giờ kết thúc hẹn + 7 ngày), `GET /appointments/:id/brief` (đúng Counselor của lịch hẹn, chưa hết hạn/chưa thu hồi), `DELETE /briefs/:id` (user thu hồi ngay)
+- [x] 15.3 `api/`: `GET /briefs/:id/pdf` xuất PDF cho user (hỗ trợ tiếng Việt)
+- [ ] 15.4 `web/`: luồng "Chuẩn bị buổi tư vấn" cho User: chọn khoảng thời gian → xem bản nháp → bật/tắt từng mục → chọn đoạn nhật ký → viết "điều mình muốn nói" (3 câu hỏi gợi ý) → xác nhận (hiện rõ ai xem, hết hạn khi nào) → gắn vào lịch hẹn; xem/thu hồi/tải PDF; nút ở Dashboard (mức kéo dài) và trang lịch hẹn
+- [ ] 15.5 `web/`: Counselor xem brief trong chi tiết lịch hẹn, kèm nhãn "dữ liệu do user chọn chia sẻ, hết hạn dd/mm", disclaimer không phải chẩn đoán
+- [ ] 15.6 Seed user demo 28 ngày dữ liệu (xu hướng xấu dần, có hoạt động, nhật ký) + 1 lịch hẹn để demo luồng đầy đủ
 
-### Module 13: Nhắn tin với tư vấn viên
-- [x] 13.1 `api/`: Prisma `Conversation` (userId, counselorId, status PENDING/ACTIVE/CLOSED) và `Message` (conversationId, senderId, content, createdAt, readAt); REST: `POST /conversations` (user gửi yêu cầu), `GET /conversations` (của mình), `PATCH /conversations/:id` (counselor chấp nhận; hai bên đóng), `GET /conversations/:id/messages` (phân trang), `POST /conversations/:id/messages` (chỉ khi ACTIVE, giới hạn độ dài, rate limit)
-- [x] 13.2 `api/`: realtime bằng Socket.IO gateway có sẵn (verify JWT, room theo conversation, event `message:new`), đếm tin chưa đọc, đánh dấu đã đọc
-- [x] 13.3 `web/`: trang Tin nhắn cho User (danh sách, gửi yêu cầu tới tư vấn viên, khung chat realtime, badge chưa đọc, disclaimer không dùng cho khẩn cấp + mục "Cần giúp ngay")
-- [x] 13.4 `web/`: trang Tin nhắn cho Counselor (yêu cầu chờ duyệt, chấp nhận/đóng, khung chat realtime)
-
-### Module 14: Hoạt động nhỏ mỗi ngày
-- [x] 14.1 `api/`: Prisma `ActivityTemplate` (title, description, category, level NHẸ/VỪA/KÉO DÀI, durationMin, active) và `DailyActivity` (userId, templateId, date, completedAt; unique userId+templateId+date); seed 25 hoạt động mẫu đa dạng danh mục
-- [x] 14.2 `api/`: `GET /activities/today` (tạo 3 việc theo mức cảnh báo hiện tại, gọi lại trong ngày trả cùng danh sách, không lặp hôm qua), `POST /activities/:id/complete`, `DELETE /activities/:id/complete` (bỏ tick), `POST /activities/:id/swap` (đổi việc, tối đa 2 lần/ngày), `GET /activities/streak` (chuỗi ngày theo giờ VN, hôm nay chưa xong không phá chuỗi)
-- [x] 14.3 `web/`: thẻ "Việc nhỏ hôm nay" trên Dashboard + trang Hoạt động đầy đủ (tick hoàn thành, chuỗi streak, lịch 7/30 ngày, đổi việc, lời động viên theo ngữ cảnh)
-
-### Module 12: Hoàn thiện (làm sau 11, 13, 14)
-- [ ] 12.1 Test luồng chính: đăng ký → check-in → dashboard → cảnh báo → chia sẻ → counselor xem → thu hồi → 403; thêm luồng nhắn tin và hoạt động nhỏ
-- [ ] 12.2 Xử lý lỗi và UX: mất kết nối WS, từ chối quyền webcam, loading/empty state, lỗi tiếng Việt
+### Module 12: Hoàn thiện (làm sau 11, 13, 14, 15)
+- [ ] 12.1 Test luồng chính: đăng ký → check-in → dashboard → cảnh báo → chia sẻ → counselor xem → thu hồi → 403; thêm luồng nhắn tin, hoạt động nhỏ, brief
+- [ ] 12.2 Xử lý lỗi/UX: mất kết nối WS, từ chối webcam, loading/empty state, lỗi tiếng Việt
 - [ ] 12.3 Responsive và accessibility cơ bản
-- [ ] 12.4 Rà soát bảo mật: rate limit, helmet, CORS domain thật, không log dữ liệu nhạy cảm (kể cả nội dung tin nhắn), secret chỉ ở `.env`
-- [ ] 12.5 Deploy: Dockerfile `api/`, `app.py` (kèm model), `web/`; docker-compose prod; HTTPS/WSS
-- [ ] 12.6 Dữ liệu demo (seed) + kịch bản demo 3 vai trò
+- [ ] 12.4 Rà soát bảo mật: rate limit, helmet, CORS, không log dữ liệu nhạy cảm (tin nhắn, nhật ký, brief), secret chỉ ở `.env`
+- [ ] 12.5 Đóng gói chạy local: `docker compose up -d` dựng MySQL, README hướng dẫn chạy `api/`, `app.py`, `web/`; clone về máy sạch chạy được
+- [ ] 12.6 Dữ liệu demo + kịch bản demo 3 vai trò (có kịch bản brief)
 - [ ] 12.7 README + `docs/REPORT.md`: kiến trúc, đạo đức/riêng tư, hạn chế và độ chính xác model
 
 ## Quyết định đã chốt (không bàn lại)
 - Giữ FastAPI cho AI, NestJS cho nghiệp vụ; frame đi thẳng React → FastAPI
-- DB: MySQL + Prisma; không lưu ảnh/video
-- Cảnh báo bằng rule, không dùng ML
-- Counselor chỉ thấy user có `ConsentShare` ACTIVE; thu hồi có hiệu lực ngay
-- Thống kê ẩn danh chỉ trả khi nhóm ≥ 5 người
-- Admin không xem cảm xúc/nhật ký/tin nhắn cá nhân; mặc định không chia sẻ
-- Nhắn tin: chỉ giữa đúng 2 bên của conversation; counselor phải chấp nhận mới gửi được; nhắn tin KHÔNG tự động chia sẻ dữ liệu cảm xúc (vẫn do `ConsentShare`)
-- Hoạt động nhỏ: ngày tính chuỗi khi hoàn thành ≥ 1 việc; ngày tính theo giờ Việt Nam; hôm nay chưa xong không phá chuỗi; giọng điệu khuyến khích, không trách khi đứt chuỗi
+- DB: MySQL + Prisma; không lưu ảnh/video; cảnh báo bằng rule, không ML
+- Counselor chỉ thấy user có `ConsentShare` ACTIVE; thu hồi hiệu lực ngay; stats ẩn danh khi nhóm ≥ 5
+- Admin không xem cảm xúc/nhật ký/tin nhắn/brief; mặc định không chia sẻ
+- Nhắn tin: chỉ 2 bên; counselor chấp nhận mới gửi được; không tự chia sẻ dữ liệu cảm xúc
+- Hoạt động nhỏ: chuỗi tính khi hoàn thành ≥ 1 việc/ngày (giờ VN); giọng điệu khuyến khích
+- Brief: tạo bằng quy tắc/thống kê, KHÔNG dùng LLM, không nhãn chẩn đoán; lưu snapshot; chỉ Counselor của lịch hẹn đó xem được và không cấp quyền xem dữ liệu ngoài snapshot; hết hạn giờ kết thúc hẹn + 7 ngày; thu hồi có hiệu lực ngay
 
 ## Lỗi / nợ kỹ thuật đã biết
 - (ghi ngắn: lỗi gì, ở file nào)
 
 ## Endpoint đã có (tóm tắt, điền theo thực tế)
-- /auth/*, /emotion-logs (+ /summary), /journal-entries, /alerts/me, /resources
-- /counselors, /consents/*, /me/export, /me/data, /counselor/*, /appointments/*, /conversations/*
-- /activities/* (`/today`, `/:id/complete`, `/:id/swap`, `/streak`)
+- /auth/*, /emotion-logs, /journal-entries, /alerts/me, /resources, /conversations/*, /activities/*
+- /counselors, /consents/*, /me/export, /me/data, /counselor/*, /appointments/*, /appointments/:id/brief
+- /briefs/preview, /briefs, /briefs/:id, /briefs/:id/pdf
 - WS (`app.py`): cần JWT, nhận frame, trả `{emotion, scores}`
-- Socket.IO (`api`): verify JWT, `alert:prolonged`, rooms `conversation_*`, `message:new`, `message:read`

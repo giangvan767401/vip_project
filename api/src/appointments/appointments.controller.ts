@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
+import { BriefsService } from '../briefs/briefs.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -10,7 +11,10 @@ import { Role } from '@prisma/client';
 @Controller('appointments')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AppointmentsController {
-  constructor(private readonly appointmentsService: AppointmentsService) {}
+  constructor(
+    private readonly appointmentsService: AppointmentsService,
+    private readonly briefsService: BriefsService,
+  ) {}
 
   @Post()
   @Roles(Role.USER)
@@ -34,5 +38,15 @@ export class AppointmentsController {
     @Param('id') id: string,
   ) {
     return this.appointmentsService.cancelByStudent(userId, id);
+  }
+
+  // 15.2: Counselor xem brief của đúng lịch hẹn (chỉ counselor của cuộc hẹn đó, chưa hết hạn / chưa thu hồi)
+  @Get(':id/brief')
+  @Roles(Role.COUNSELOR)
+  async getAppointmentBrief(
+    @CurrentUser('userId') counselorId: string,
+    @Param('id') id: string,
+  ) {
+    return this.briefsService.getBriefForCounselor(counselorId, id);
   }
 }

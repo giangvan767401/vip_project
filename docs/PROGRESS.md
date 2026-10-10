@@ -1,34 +1,45 @@
 # PROGRESS – cập nhật sau mỗi task (giữ file < 100 dòng)
 
 ## Trạng thái hiện tại
-Giai đoạn: D – Hoàn thiện | Cập nhật lần cuối: 2026-10-10
+Giai đoạn: D – Hoàn thiện (kèm module 13, 14 bổ sung) | Cập nhật lần cuối: YYYY-MM-DD
+Thứ tự làm: 11 → 13 → 14 → 12
 
 ## Done
 - [x] Demo gốc: `app.py` (FastAPI + WebSocket) + `static/index.html`
 - [x] A (nền tảng): docker-compose MySQL, `.env.example`, CORS; `api/` NestJS + Prisma, Auth JWT + Guard role; `app.py` verify JWT cho WS; `web/` React + TS
 - [x] B (MVP): check-in webcam + `/emotion-logs`; Nhật ký; Dashboard Recharts + seed; cảnh báo rule, `Resource`, bài tập thở, "Cần giúp ngay"
 - [x] C: quyền riêng tư (`ConsentShare`, export/xóa dữ liệu); Counselor (xem theo consent, stats ẩn danh, Socket.IO); lịch hẹn + quản lý tài liệu
-- [x] D (11): Admin – Guard ADMIN, `GET /admin/users` (không trả cảm xúc/nhật ký), tạo COUNSELOR, đổi role, khóa/mở khóa (`isActive`); CRUD `AlertRule` (ngưỡng đọc từ DB); `GET /admin/stats` (tổng hợp vĩ mô); kiểm duyệt `Resource` (`isPublished`); trang Admin 4 tab; JWT strategy check `isActive`
 
 ## In progress
 - (chưa có)
 
 ## Next – Giai đoạn D (làm đúng thứ tự, mỗi lần 1 task nhỏ)
 
-### Module 11: Admin ✅
-- [x] 11.1 `api/`: Guard ADMIN; `GET /admin/users` (KHÔNG trả dữ liệu cảm xúc/nhật ký), tạo tài khoản COUNSELOR, đổi role, khóa/mở khóa tài khoản
-- [x] 11.2 `api/`: CRUD `AlertRule` (chỉnh ngưỡng, số ngày xét, mức gợi ý); hàm cảnh báo đọc ngưỡng từ DB
-- [x] 11.3 `api/`: `GET /admin/stats` (số user, số phiên check-in, số lịch hẹn; chỉ số tổng hợp, không dữ liệu cá nhân) + xóa/ẩn `Resource` vi phạm
-- [x] 11.4 `web/`: trang Admin: tài khoản, ngưỡng cảnh báo, thống kê hệ thống, nội dung
+### Module 11: Admin
+- [ ] 11.1 `api/`: Guard ADMIN; `GET /admin/users` (KHÔNG trả dữ liệu cảm xúc/nhật ký/tin nhắn), tạo tài khoản COUNSELOR, đổi role, khóa/mở khóa
+- [ ] 11.2 `api/`: CRUD `AlertRule` (ngưỡng, số ngày xét, mức gợi ý); hàm cảnh báo đọc ngưỡng từ DB
+- [ ] 11.3 `api/`: `GET /admin/stats` (chỉ số tổng hợp, không dữ liệu cá nhân) + xóa/ẩn `Resource` vi phạm
+- [ ] 11.4 `web/`: trang Admin: tài khoản, ngưỡng cảnh báo, thống kê, nội dung
 
-### Module 12: Hoàn thiện
-- [ ] 12.1 Test luồng chính (script hoặc e2e): đăng ký → check-in → dashboard → cảnh báo → chia sẻ → counselor xem → thu hồi → 403
-- [ ] 12.2 Xử lý lỗi và UX: mất kết nối WS, từ chối quyền webcam, loading/empty state, thông báo lỗi tiếng Việt
-- [ ] 12.3 Responsive (điện thoại/laptop) và accessibility cơ bản
-- [ ] 12.4 Rà soát bảo mật: rate limit login, helmet, CORS cho domain thật, không log dữ liệu nhạy cảm, secret chỉ ở `.env`, xóa code ghi `emotion_log.csv` nếu còn
-- [ ] 12.5 Deploy: Dockerfile cho `api/`, `app.py` (kèm model), `web/`; docker-compose prod; HTTPS/WSS (webcam chỉ chạy trên HTTPS hoặc localhost)
-- [ ] 12.6 Dữ liệu demo (seed) + kịch bản demo từng vai trò
-- [ ] 12.7 README (cách chạy) + tài liệu báo cáo: kiến trúc, đạo đức/riêng tư, hạn chế và độ chính xác của model
+### Module 13: Nhắn tin với tư vấn viên
+- [x] 13.1 `api/`: Prisma `Conversation` (userId, counselorId, status PENDING/ACTIVE/CLOSED) và `Message` (conversationId, senderId, content, createdAt, readAt); REST: `POST /conversations` (user gửi yêu cầu), `GET /conversations` (của mình), `PATCH /conversations/:id` (counselor chấp nhận; hai bên đóng), `GET /conversations/:id/messages` (phân trang), `POST /conversations/:id/messages` (chỉ khi ACTIVE, giới hạn độ dài, rate limit)
+- [x] 13.2 `api/`: realtime bằng Socket.IO gateway có sẵn (verify JWT, room theo conversation, event `message:new`), đếm tin chưa đọc, đánh dấu đã đọc
+- [x] 13.3 `web/`: trang Tin nhắn cho User (danh sách, gửi yêu cầu tới tư vấn viên, khung chat realtime, badge chưa đọc, disclaimer không dùng cho khẩn cấp + mục "Cần giúp ngay")
+- [x] 13.4 `web/`: trang Tin nhắn cho Counselor (yêu cầu chờ duyệt, chấp nhận/đóng, khung chat realtime)
+
+### Module 14: Hoạt động nhỏ mỗi ngày
+- [ ] 14.1 `api/`: Prisma `ActivityTemplate` (title, description, category, level NHẸ/VỪA/KÉO DÀI, durationMin, active) và `DailyActivity` (userId, templateId, date, completedAt; unique userId+templateId+date); seed ≥ 20 hoạt động (đi bộ 10 phút, gọi bạn, dọn bàn...)
+- [ ] 14.2 `api/`: `GET /activities/today` (tạo 3–5 việc theo mức cảnh báo hiện tại, gọi lại trong ngày trả cùng danh sách, không lặp danh sách hôm qua), `POST /activities/:id/complete`, `DELETE /activities/:id/complete` (bỏ tick), `POST /activities/:id/swap` (đổi việc, tối đa 1–2 lần/ngày), `GET /activities/streak`
+- [ ] 14.3 `web/`: thẻ "Việc nhỏ hôm nay" trên Dashboard + trang Hoạt động (tick, chuỗi ngày, lịch 7/30 ngày gần nhất)
+
+### Module 12: Hoàn thiện (làm sau 11, 13, 14)
+- [ ] 12.1 Test luồng chính: đăng ký → check-in → dashboard → cảnh báo → chia sẻ → counselor xem → thu hồi → 403; thêm luồng nhắn tin và hoạt động nhỏ
+- [ ] 12.2 Xử lý lỗi và UX: mất kết nối WS, từ chối quyền webcam, loading/empty state, lỗi tiếng Việt
+- [ ] 12.3 Responsive và accessibility cơ bản
+- [ ] 12.4 Rà soát bảo mật: rate limit, helmet, CORS domain thật, không log dữ liệu nhạy cảm (kể cả nội dung tin nhắn), secret chỉ ở `.env`
+- [ ] 12.5 Deploy: Dockerfile `api/`, `app.py` (kèm model), `web/`; docker-compose prod; HTTPS/WSS
+- [ ] 12.6 Dữ liệu demo (seed) + kịch bản demo 3 vai trò
+- [ ] 12.7 README + `docs/REPORT.md`: kiến trúc, đạo đức/riêng tư, hạn chế và độ chính xác model
 
 ## Quyết định đã chốt (không bàn lại)
 - Giữ FastAPI cho AI, NestJS cho nghiệp vụ; frame đi thẳng React → FastAPI
@@ -36,14 +47,15 @@ Giai đoạn: D – Hoàn thiện | Cập nhật lần cuối: 2026-10-10
 - Cảnh báo bằng rule, không dùng ML
 - Counselor chỉ thấy user có `ConsentShare` ACTIVE; thu hồi có hiệu lực ngay
 - Thống kê ẩn danh chỉ trả khi nhóm ≥ 5 người
-- Admin không xem cảm xúc/nhật ký cá nhân; mặc định không chia sẻ
+- Admin không xem cảm xúc/nhật ký/tin nhắn cá nhân; mặc định không chia sẻ
+- Nhắn tin: chỉ giữa đúng 2 bên của conversation; counselor phải chấp nhận mới gửi được; nhắn tin KHÔNG tự động chia sẻ dữ liệu cảm xúc (vẫn do `ConsentShare`)
+- Hoạt động nhỏ: ngày tính chuỗi khi hoàn thành ≥ 1 việc; ngày tính theo giờ Việt Nam; hôm nay chưa xong không phá chuỗi; giọng điệu khuyến khích, không trách khi đứt chuỗi
 
 ## Lỗi / nợ kỹ thuật đã biết
 - (ghi ngắn: lỗi gì, ở file nào)
 
 ## Endpoint đã có (tóm tắt, điền theo thực tế)
 - /auth/*, /emotion-logs (+ /summary), /journal-entries, /alerts/me, /resources
-- /counselors, /consents/*, /me/export, /me/data, /counselor/*, /appointments/*
-- /admin/users, /admin/counselors, /admin/users/:id/role, /admin/users/:id/status
-- /admin/alert-rules (CRUD), /admin/stats, /admin/resources, /admin/resources/:id/visibility
+- /counselors, /consents/*, /me/export, /me/data, /counselor/*, /appointments/*, /conversations/*
 - WS (`app.py`): cần JWT, nhận frame, trả `{emotion, scores}`
+- Socket.IO (`api`): verify JWT, `alert:prolonged`, rooms `conversation_*`, `message:new`, `message:read`

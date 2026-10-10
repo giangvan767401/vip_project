@@ -654,6 +654,128 @@ Tất cả các endpoint trong mục này bắt buộc có Bearer Token và Role
 
 ---
 
+### 2.10. Nhắn tin với Chuyên viên Tư vấn (`/conversations`)
+
+#### A. Gửi yêu cầu nhắn tin (Sinh viên -> Chuyên viên)
+- **Method**: `POST`
+- **Endpoint**: `/conversations`
+- **Truy cập**: Role `USER`
+- **Request Body**:
+  ```json
+  {
+    "counselorId": "counselor_cuid"
+  }
+  ```
+- **Response `201 Created`**:
+  ```json
+  {
+    "id": "conv_cuid",
+    "userId": "user_cuid",
+    "counselorId": "counselor_cuid",
+    "status": "PENDING",
+    "createdAt": "2026-10-10T12:00:00.000Z",
+    "updatedAt": "2026-10-10T12:00:00.000Z",
+    "user": { "id": "...", "fullName": "...", "email": "..." },
+    "counselor": { "id": "...", "fullName": "...", "email": "..." }
+  }
+  ```
+
+#### B. Xem danh sách cuộc trò chuyện của mình
+- **Method**: `GET`
+- **Endpoint**: `/conversations`
+- **Truy cập**: Role `USER`, `COUNSELOR` (chặn `ADMIN` -> 403 Forbidden)
+- **Response `200 OK`**:
+  ```json
+  [
+    {
+      "id": "conv_cuid",
+      "userId": "user_cuid",
+      "counselorId": "counselor_cuid",
+      "status": "PENDING",
+      "lastMessage": { "id": "...", "content": "...", "createdAt": "..." },
+      "unreadCount": 2,
+      "user": { "id": "...", "fullName": "...", "email": "..." },
+      "counselor": { "id": "...", "fullName": "...", "email": "..." }
+    }
+  ]
+  ```
+
+#### C. Thay đổi trạng thái cuộc trò chuyện
+- **Method**: `PATCH`
+- **Endpoint**: `/conversations/:id`
+- **Truy cập**: Role `USER`, `COUNSELOR` (chỉ 2 bên trong cuộc trò chuyện, người ngoài -> 403 Forbidden)
+- **Request Body**:
+  ```json
+  {
+    "status": "ACTIVE"
+  }
+  ```
+  *(Chỉ Counselor của cuộc trò chuyện mới có thể duyệt từ PENDING sang ACTIVE. Cả 2 bên đều có thể chuyển sang CLOSED để kết thúc).*
+- **Response `200 OK`**: Thông tin conversation sau khi cập nhật.
+
+#### D. Lấy danh sách tin nhắn (phân trang)
+- **Method**: `GET`
+- **Endpoint**: `/conversations/:id/messages?page=1&limit=30`
+- **Truy cập**: Role `USER`, `COUNSELOR` (người ngoài cuộc trò chuyện -> 403 Forbidden, kể cả ADMIN)
+- **Response `200 OK`**:
+  ```json
+  {
+    "messages": [
+      {
+        "id": "msg_cuid",
+        "conversationId": "conv_cuid",
+        "senderId": "user_cuid",
+        "content": "Em chào cô ạ...",
+        "createdAt": "2026-10-10T12:05:00.000Z",
+        "readAt": "2026-10-10T12:06:00.000Z",
+        "sender": { "id": "...", "fullName": "...", "role": "USER" }
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "limit": 30,
+    "totalPages": 1
+  }
+  ```
+
+#### E. Gửi tin nhắn mới
+- **Method**: `POST`
+- **Endpoint**: `/conversations/:id/messages`
+- **Truy cập**: Role `USER`, `COUNSELOR` (người ngoài cuộc trò chuyện -> 403 Forbidden; status phải là ACTIVE; rate limit 5 tin/3s; tối đa 2000 ký tự; không log nội dung tin nhắn)
+- **Request Body**:
+  ```json
+  {
+    "content": "Em muốn nhờ cô tư vấn về áp lực học tập ạ"
+  }
+  ```
+- **Response `201 Created`**: Thông tin tin nhắn vừa tạo và đẩy realtime qua Socket.IO.
+
+#### F. Đánh dấu tin nhắn đã đọc
+- **Method**: `PATCH`
+- **Endpoint**: `/conversations/:id/read`
+- **Truy cập**: Role `USER`, `COUNSELOR` (người ngoài cuộc trò chuyện -> 403 Forbidden)
+- **Response `200 OK`**: `{"success": true, "readAt": "..."}`
+
+---
+
+### 2.11. Socket.IO Realtime Gateway (`/socket.io`)
+- **Kết nối**: `ws://localhost:3001` kèm `auth: { token: "<access_token>" }`. Xác thực JWT cho cả `USER` và `COUNSELOR`.
+- **Rooms**:
+  - `user_<userId>`: Nhận thông báo cá nhân, tin nhắn mới (`message:notify`), thay đổi trạng thái cuộc trò chuyện (`conversation:status_changed`).
+  - `counselor_<counselorId>`: Nhận cảnh báo nguy cơ kéo dài (`alert:prolonged`) và thông báo tin nhắn.
+  - `conversation_<conversationId>`: Phòng chat realtime theo cuộc trò chuyện (chỉ 2 bên mới được join qua event `conversation:join`, người ngoài join sẽ bị emit lỗi 403).
+- **Client Events (Client -> Server)**:
+  - `conversation:join`: `{ conversationId }` (Kiểm tra quyền, nếu không thuộc cuộc trò chuyện -> lỗi 403).
+  - `conversation:leave`: `{ conversationId }`.
+  - `message:read`: `{ conversationId }` (Đánh dấu đã đọc và thông báo cho đối phương).
+- **Server Events (Server -> Client)**:
+  - `message:new`: Tin nhắn mới gửi trong phòng chat.
+  - `message:read`: Thông báo đối phương đã đọc tin nhắn (`{ conversationId, readBy, readAt }`).
+  - `conversation:status_changed`: Cập nhật trạng thái PENDING / ACTIVE / CLOSED.
+  - `alert:prolonged`: Cảnh báo cảm xúc tiêu cực kéo dài (dành cho counselor có ConsentShare ACTIVE).
+
+---
+
 ## 3. Database Schema Models (Prisma)
 - **User**: `id`, `email`, `password` (hashed with bcrypt), `fullName`, `role` (`USER` | `COUNSELOR` | `ADMIN`), `isActive` (Boolean), `createdAt`, `updatedAt`.
 - **EmotionLog**: `id`, `userId`, `emotion`, `positiveScore` (Float), `negativeScore` (Float), `scores` (Json), `startedAt` (DateTime), `endedAt` (DateTime), `note` (Text), `createdAt` (DateTime).
@@ -662,6 +784,8 @@ Tất cả các endpoint trong mục này bắt buộc có Bearer Token và Role
 - **Resource**: `id`, `creatorId` (nullable), `title`, `description`, `type`, `level`, `content`, `url`, `durationMinutes`, `isPublished` (Boolean), `createdAt`, `updatedAt`.
 - **ConsentShare**: `id`, `userId`, `counselorId`, `status` (`ACTIVE` | `REVOKED`), `grantedAt`, `revokedAt`, `createdAt`, `updatedAt`.
 - **Appointment**: `id`, `userId`, `counselorId`, `startAt`, `note`, `status` (`PENDING` | `CONFIRMED` | `CANCELLED`), `createdAt`, `updatedAt`.
+- **Conversation**: `id`, `userId`, `counselorId`, `status` (`PENDING` | `ACTIVE` | `CLOSED`), `createdAt`, `updatedAt`.
+- **Message**: `id`, `conversationId`, `senderId`, `content` (Text), `createdAt`, `readAt`.
 
 ---
 

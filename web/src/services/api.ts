@@ -394,6 +394,67 @@ class ApiClient {
     });
     return this.handleResponse<{ message: string; id: string }>(res);
   }
+
+  // ==========================================
+  // Module 13: Conversation & Messaging Endpoints
+  // ==========================================
+  async createConversation(counselorId: string): Promise<import('../types/conversation').Conversation> {
+    const res = await fetch(`${API_BASE_URL}/conversations`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ counselorId }),
+    });
+    return this.handleResponse<import('../types/conversation').Conversation>(res);
+  }
+
+  async getConversations(): Promise<import('../types/conversation').Conversation[]> {
+    const res = await fetch(`${API_BASE_URL}/conversations`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<import('../types/conversation').Conversation[]>(res);
+  }
+
+  async updateConversationStatus(
+    id: string,
+    status: import('../types/conversation').ConversationStatus,
+  ): Promise<import('../types/conversation').Conversation> {
+    const res = await fetch(`${API_BASE_URL}/conversations/${id}`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ status }),
+    });
+    return this.handleResponse<import('../types/conversation').Conversation>(res);
+  }
+
+  async getConversationMessages(
+    id: string,
+    page: number = 1,
+    limit: number = 50,
+  ): Promise<import('../types/conversation').MessagesResponse> {
+    const res = await fetch(`${API_BASE_URL}/conversations/${id}/messages?page=${page}&limit=${limit}`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<import('../types/conversation').MessagesResponse>(res);
+  }
+
+  async sendMessage(id: string, content: string): Promise<import('../types/conversation').Message> {
+    const res = await fetch(`${API_BASE_URL}/conversations/${id}/messages`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ content }),
+    });
+    return this.handleResponse<import('../types/conversation').Message>(res);
+  }
+
+  async markConversationAsRead(id: string): Promise<{ success: boolean; readAt: string }> {
+    const res = await fetch(`${API_BASE_URL}/conversations/${id}/read`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<{ success: boolean; readAt: string }>(res);
+  }
 }
 
 export const api = new ApiClient();

@@ -11,6 +11,7 @@ import { MeModule } from './me/me.module';
 import { CounselorModule } from './counselor/counselor.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { AdminModule } from './admin/admin.module';
+import { ConversationsModule } from './conversations/conversations.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { AdminModule } from './admin/admin.module';
     CounselorModule,
     AppointmentsModule,
     AdminModule,
+    ConversationsModule,
   ],
 })
 export class AppModule {}

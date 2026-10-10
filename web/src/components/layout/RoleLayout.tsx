@@ -12,7 +12,8 @@ import {
   Users,
   Bell,
   Settings,
-  Calendar
+  Calendar,
+  MessageSquare,
 } from 'lucide-react';
 
 interface RoleLayoutProps {
@@ -51,6 +52,7 @@ export const RoleLayout: React.FC<RoleLayoutProps> = ({ children }) => {
       case 'COUNSELOR':
         return [
           { to: '/counselor/dashboard', label: 'Bảng điều khiển', icon: LayoutDashboard },
+          { to: '/counselor/messages', label: 'Hộp thư tư vấn', icon: MessageSquare },
           { to: '/counselor/students', label: 'Sinh viên đồng ý chia sẻ', icon: Users },
           { to: '/counselor/alerts', label: 'Cảnh báo cảm xúc', icon: Bell },
         ];
@@ -60,6 +62,7 @@ export const RoleLayout: React.FC<RoleLayoutProps> = ({ children }) => {
           { to: '/student/dashboard', label: 'Tổng quan cảm xúc', icon: LayoutDashboard },
           { to: '/student/checkin', label: 'Nhận diện Webcam', icon: Camera },
           { to: '/student/journal', label: 'Nhật ký cá nhân', icon: BookOpen },
+          { to: '/student/messages', label: 'Tin nhắn tư vấn', icon: MessageSquare },
           { to: '/student/appointments', label: 'Lịch hẹn & Tài liệu', icon: Calendar },
           { to: '/student/privacy', label: 'Quyền riêng tư', icon: ShieldCheck },
         ];

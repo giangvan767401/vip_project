@@ -9,19 +9,14 @@ Thứ tự làm: 11 → 13 → 14 → 15 → 12 (chạy local, chưa deploy)
 - [x] A: docker-compose MySQL, `.env.example`, CORS; `api/` NestJS + Prisma, Auth JWT + Guard role; `app.py` verify JWT cho WS; `web/` React + TS
 - [x] B (MVP): check-in webcam + `/emotion-logs`; Nhật ký; Dashboard + seed; cảnh báo rule, `Resource`, bài tập thở, "Cần giúp ngay"
 - [x] C: quyền riêng tư (`ConsentShare`, export/xóa); Counselor (xem theo consent, stats ẩn danh, Socket.IO); lịch hẹn + tài liệu
+- [x] D (13): Nhắn tin tư vấn viên (Socket.IO, phòng riêng, đếm tin chưa đọc)
+- [x] D (14): Hoạt động nhỏ mỗi ngày (Streak, swap tối đa 2 lần, theo mức cảnh báo)
+- [x] D (15): Chuẩn bị buổi tư vấn (SessionBrief snapshot, xuất PDF tiếng Việt, gắn lịch hẹn, xem/thu hồi, seed demo 28 ngày)
 
 ## In progress
 - (chưa có)
 
 ## Next – Giai đoạn D (làm đúng thứ tự, mỗi lần 1 task nhỏ)
-
-### Module 15: Chuẩn bị buổi tư vấn (tính năng điểm nhấn)
-- [x] 15.1 `api/`: Prisma `SessionBrief` (userId, appointmentId unique, rangeDays, các mục bật/tắt, userNote, snapshot JSON, expiresAt, revokedAt); `POST /briefs/preview` dựng bản nháp bằng quy tắc/thống kê (xu hướng ngày, số ngày tiêu cực, khung giờ khó nhất, hoạt động/bài tập đã làm); báo "chưa đủ dữ liệu" nếu < 7 ngày
-- [x] 15.2 `api/`: `POST /briefs` gắn vào lịch hẹn của mình (lưu snapshot tại thời điểm xác nhận, hết hạn = giờ kết thúc hẹn + 7 ngày), `GET /appointments/:id/brief` (đúng Counselor của lịch hẹn, chưa hết hạn/chưa thu hồi), `DELETE /briefs/:id` (user thu hồi ngay)
-- [x] 15.3 `api/`: `GET /briefs/:id/pdf` xuất PDF cho user (hỗ trợ tiếng Việt)
-- [ ] 15.4 `web/`: luồng "Chuẩn bị buổi tư vấn" cho User: chọn khoảng thời gian → xem bản nháp → bật/tắt từng mục → chọn đoạn nhật ký → viết "điều mình muốn nói" (3 câu hỏi gợi ý) → xác nhận (hiện rõ ai xem, hết hạn khi nào) → gắn vào lịch hẹn; xem/thu hồi/tải PDF; nút ở Dashboard (mức kéo dài) và trang lịch hẹn
-- [ ] 15.5 `web/`: Counselor xem brief trong chi tiết lịch hẹn, kèm nhãn "dữ liệu do user chọn chia sẻ, hết hạn dd/mm", disclaimer không phải chẩn đoán
-- [ ] 15.6 Seed user demo 28 ngày dữ liệu (xu hướng xấu dần, có hoạt động, nhật ký) + 1 lịch hẹn để demo luồng đầy đủ
 
 ### Module 12: Hoàn thiện (làm sau 11, 13, 14, 15)
 - [ ] 12.1 Test luồng chính: đăng ký → check-in → dashboard → cảnh báo → chia sẻ → counselor xem → thu hồi → 403; thêm luồng nhắn tin, hoạt động nhỏ, brief

@@ -27,6 +27,7 @@ import {
   CheckCircle2,
   Circle,
   Flame,
+  FileText,
 } from 'lucide-react';
 import { DailyActivity, ActivityStreakResponse } from '../types/activity';
 import {
@@ -302,7 +303,26 @@ export const StudentDashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', alignSelf: 'center' }}>
+              <div style={{ display: 'flex', gap: '10px', alignSelf: 'center', flexWrap: 'wrap' }}>
+                {alertData.level === 'keo_dai' && (
+                  <Link
+                    to="/student/appointments/prepare"
+                    className="btn"
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '0.85rem',
+                      background: 'rgba(99, 102, 241, 0.25)',
+                      border: '1px solid rgba(99, 102, 241, 0.5)',
+                      color: '#c7d2fe',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <FileText size={15} /> Chuẩn bị buổi tư vấn
+                  </Link>
+                )}
                 <Link
                   to="/student/breathing"
                   className="btn btn-primary"

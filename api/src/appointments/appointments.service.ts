@@ -88,6 +88,7 @@ export class AppointmentsService {
             email: true,
           },
         },
+        sessionBrief: true,
       },
       orderBy: { startAt: 'desc' },
     });
@@ -103,6 +104,15 @@ export class AppointmentsService {
             id: true,
             fullName: true,
             email: true,
+          },
+        },
+        sessionBrief: {
+          select: {
+            id: true,
+            expiresAt: true,
+            revokedAt: true,
+            rangeDays: true,
+            createdAt: true,
           },
         },
       },

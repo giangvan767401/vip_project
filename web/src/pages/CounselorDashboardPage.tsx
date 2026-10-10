@@ -89,6 +89,28 @@ export const CounselorDashboardPage: React.FC = () => {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
+  // Module 15: Session Brief Modal
+  const [counselorBrief, setCounselorBrief] = useState<import('../types/brief').CounselorBriefResponse | null>(null);
+  const [loadingBrief, setLoadingBrief] = useState(false);
+  const [briefError, setBriefError] = useState<string | null>(null);
+  const [showBriefModal, setShowBriefModal] = useState(false);
+
+  const handleViewBrief = async (appointmentId: string) => {
+    try {
+      setLoadingBrief(true);
+      setBriefError(null);
+      setCounselorBrief(null);
+      setShowBriefModal(true);
+      const res = await api.getAppointmentBrief(appointmentId);
+      setCounselorBrief(res);
+    } catch (err: any) {
+      console.error('Lỗi khi tải tóm tắt tư vấn:', err);
+      setBriefError(err?.message || 'Không thể xem tóm tắt của lịch hẹn này');
+    } finally {
+      setLoadingBrief(false);
+    }
+  };
+
   // Real-time alerts via Socket.IO
   const [realtimeAlerts, setRealtimeAlerts] = useState<RealtimeAlert[]>([]);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
@@ -700,6 +722,51 @@ export const CounselorDashboardPage: React.FC = () => {
                             Ghi chú từ sinh viên: &quot;{appt.note}&quot;
                           </div>
                         )}
+
+                        {appt.sessionBrief && (
+                          <div style={{ marginTop: '8px' }}>
+                            {appt.sessionBrief.revokedAt ? (
+                              <span style={{ fontSize: '0.78rem', color: '#94a3b8', background: 'rgba(148, 163, 184, 0.15)', padding: '3px 8px', borderRadius: '4px' }}>
+                                Tóm tắt: Đã thu hồi
+                              </span>
+                            ) : new Date(appt.sessionBrief.expiresAt) < new Date() ? (
+                              <span style={{ fontSize: '0.78rem', color: '#94a3b8', background: 'rgba(148, 163, 184, 0.15)', padding: '3px 8px', borderRadius: '4px' }}>
+                                Tóm tắt: Đã hết hạn
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '0.78rem', color: '#34d399', background: 'rgba(52, 211, 153, 0.15)', border: '1px solid rgba(52, 211, 153, 0.3)', padding: '3px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <CheckCircle2 size={12} /> Đã có tóm tắt tư vấn ({appt.sessionBrief.rangeDays} ngày)
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        <div style={{ marginTop: '10px' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleViewBrief(appt.id)}
+                            className="btn"
+                            style={{
+                              padding: '6px 14px',
+                              fontSize: '0.82rem',
+                              background: appt.sessionBrief && !appt.sessionBrief.revokedAt && new Date(appt.sessionBrief.expiresAt) >= new Date()
+                                ? 'rgba(52, 211, 153, 0.15)'
+                                : 'rgba(99, 102, 241, 0.15)',
+                              border: appt.sessionBrief && !appt.sessionBrief.revokedAt && new Date(appt.sessionBrief.expiresAt) >= new Date()
+                                ? '1px solid rgba(52, 211, 153, 0.4)'
+                                : '1px solid rgba(99, 102, 241, 0.35)',
+                              color: appt.sessionBrief && !appt.sessionBrief.revokedAt && new Date(appt.sessionBrief.expiresAt) >= new Date()
+                                ? '#6ee7b7'
+                                : '#a5b4fc',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontWeight: 600,
+                            }}
+                          >
+                            <FileText size={15} /> Xem tóm tắt tư vấn (Brief)
+                          </button>
+                        </div>
                       </div>
 
                       {appt.status === 'PENDING' && (
@@ -1098,6 +1165,182 @@ export const CounselorDashboardPage: React.FC = () => {
                   </div>
                 </div>
               ) : null}
+            </div>
+          </div>
+        )}
+
+        {/* Modal xem tóm tắt tư vấn cho Counselor */}
+        {showBriefModal && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.75)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              padding: '20px',
+            }}
+          >
+            <div
+              className="card"
+              style={{
+                width: '100%',
+                maxWidth: '740px',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                padding: '28px',
+                background: '#0f172a',
+                border: '1px solid var(--border-glass)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '18px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <FileText size={22} color="#818cf8" />
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: '#f8fafc' }}>
+                    Tóm tắt buổi tư vấn (Session Brief)
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowBriefModal(false)}
+                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {loadingBrief ? (
+                <div style={{ textAlign: 'center', padding: '50px 0', color: 'var(--text-muted)' }}>
+                  <RefreshCw size={26} className="animate-spin" style={{ margin: '0 auto 10px' }} />
+                  <div>Đang tải thông tin tóm tắt...</div>
+                </div>
+              ) : briefError ? (
+                <div style={{ padding: '24px', borderRadius: 'var(--radius-md)', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.35)', color: '#fca5a5', textAlign: 'center' }}>
+                  <ShieldAlert size={38} style={{ margin: '0 auto 10px', color: '#ef4444' }} />
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 6px 0', color: '#f87171' }}>
+                    Không thể xem tóm tắt tư vấn
+                  </h4>
+                  <p style={{ fontSize: '0.9rem', color: '#cbd5e1', maxWidth: '520px', margin: '0 auto 16px auto' }}>
+                    {briefError}
+                  </p>
+                  <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                    * Lưu ý: Quyền xem chỉ có hiệu lực khi sinh viên chủ động chia sẻ và chưa bị thu hồi hoặc hết hạn.
+                  </div>
+                </div>
+              ) : counselorBrief ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* Nhãn chia sẻ & hạn xem */}
+                  <div style={{ padding: '12px 16px', background: 'rgba(52, 211, 153, 0.08)', border: '1px solid rgba(52, 211, 153, 0.25)', borderRadius: '8px', fontSize: '0.85rem', color: '#a7f3d0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                    <span>
+                      <strong>Sinh viên:</strong> {counselorBrief.student.fullName} ({counselorBrief.student.email})
+                    </span>
+                    <span style={{ color: '#38bdf8', fontWeight: 600 }}>
+                      Dữ liệu do người dùng chọn chia sẻ, hết hạn {new Date(counselorBrief.expiresAt).toLocaleDateString('vi-VN')}
+                    </span>
+                  </div>
+
+                  {/* Disclaimer không phải chẩn đoán y tế */}
+                  <div style={{ padding: '10px 14px', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '8px', fontSize: '0.82rem', color: '#fde68a' }}>
+                    <strong>Tuyên bố miễn trừ:</strong> {counselorBrief.disclaimer || 'Không phải chẩn đoán y tế. Dữ liệu tổng hợp từ hoạt động tự theo dõi của người dùng nhằm hỗ trợ trao đổi thuận tiện.'}
+                  </div>
+
+                  {/* Điều sinh viên muốn nói */}
+                  {counselorBrief.userNote && (
+                    <div style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#818cf8', marginBottom: '6px' }}>
+                        Điều sinh viên chia sẻ trước buổi hẹn:
+                      </div>
+                      <div style={{ fontSize: '0.88rem', color: '#f8fafc', whiteSpace: 'pre-line', lineHeight: '1.6' }}>
+                        {counselorBrief.userNote}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Các mục trong snapshot */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {counselorBrief.snapshot?.trend && (
+                      <div style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#38bdf8', marginBottom: '6px' }}>
+                          Xu hướng cảm xúc ({counselorBrief.snapshot.rangeDays} ngày):
+                        </div>
+                        <div style={{ fontSize: '0.86rem', color: '#cbd5e1' }}>
+                          Điểm tích cực TB: {counselorBrief.snapshot.trend.avgPositiveScore}% | Tiêu cực TB: {counselorBrief.snapshot.trend.avgNegativeScore}% | Chủ đạo: {counselorBrief.snapshot.trend.dominantEmotion} ({counselorBrief.snapshot.trend.totalCheckIns} phiên)
+                        </div>
+                      </div>
+                    )}
+
+                    {counselorBrief.snapshot?.negativeDays && (
+                      <div style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f59e0b', marginBottom: '6px' }}>
+                          Mức độ căng thẳng:
+                        </div>
+                        <div style={{ fontSize: '0.86rem', color: '#cbd5e1' }}>
+                          {counselorBrief.snapshot.negativeDays.description}
+                        </div>
+                      </div>
+                    )}
+
+                    {counselorBrief.snapshot?.difficultHours && (
+                      <div style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#a855f7', marginBottom: '6px' }}>
+                          Khung giờ dễ căng thẳng nhất:
+                        </div>
+                        <div style={{ fontSize: '0.86rem', color: '#cbd5e1' }}>
+                          {counselorBrief.snapshot.difficultHours.mostDifficultSlot}
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '4px' }}>
+                          {counselorBrief.snapshot.difficultHours.recommendation}
+                        </div>
+                      </div>
+                    )}
+
+                    {counselorBrief.snapshot?.activities && (
+                      <div style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#34d399', marginBottom: '6px' }}>
+                          Hoạt động tự chăm sóc đã hoàn thành ({counselorBrief.snapshot.activities.totalCompleted}):
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.84rem', color: '#cbd5e1' }}>
+                          {counselorBrief.snapshot.activities.items.map((a, i) => (
+                            <div key={i}>• [{a.completedDate}] {a.title} ({a.category})</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {counselorBrief.snapshot?.journalNotes && counselorBrief.snapshot.journalNotes.length > 0 && (
+                      <div style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#ec4899', marginBottom: '6px' }}>
+                          Trích đoạn nhật ký do sinh viên chia sẻ:
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.84rem', color: '#cbd5e1' }}>
+                          {counselorBrief.snapshot.journalNotes.map((j, i) => (
+                            <div key={i}>
+                              <span style={{ color: '#94a3b8' }}>[{j.date} - Tâm trạng {j.mood}/5]:</span> &quot;{j.noteSnippet}&quot;
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowBriefModal(false)}
+                  className="btn btn-secondary"
+                  style={{ padding: '8px 18px', fontSize: '0.85rem' }}
+                >
+                  Đóng
+                </button>
+              </div>
             </div>
           </div>
         )}

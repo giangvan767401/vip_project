@@ -19,6 +19,7 @@ export interface Appointment {
     fullName: string;
     email: string;
   };
+  sessionBrief?: import('./brief').SessionBrief | null;
 }
 
 export interface CreateAppointmentPayload {

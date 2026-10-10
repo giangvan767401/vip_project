@@ -496,6 +496,68 @@ class ApiClient {
     });
     return this.handleResponse<{ activity: import('../types/activity').DailyActivity; swapsRemaining: number }>(res);
   }
+
+  // ==========================================
+  // Module 15: Session Briefs Endpoints
+  // ==========================================
+  async previewBrief(payload: import('../types/brief').CreateBriefPreviewPayload): Promise<import('../types/brief').BriefPreviewResponse> {
+    const res = await fetch(`${API_BASE_URL}/briefs/preview`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return this.handleResponse<import('../types/brief').BriefPreviewResponse>(res);
+  }
+
+  async createBrief(payload: import('../types/brief').CreateBriefPayload): Promise<import('../types/brief').SessionBrief> {
+    const res = await fetch(`${API_BASE_URL}/briefs`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return this.handleResponse<import('../types/brief').SessionBrief>(res);
+  }
+
+  async revokeBrief(id: string): Promise<import('../types/brief').SessionBrief> {
+    const res = await fetch(`${API_BASE_URL}/briefs/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<import('../types/brief').SessionBrief>(res);
+  }
+
+  async downloadBriefPdf(id: string): Promise<void> {
+    const activeToken = localStorage.getItem('mindlog_token');
+    const res = await fetch(`${API_BASE_URL}/briefs/${id}/pdf`, {
+      method: 'GET',
+      headers: {
+        ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
+      },
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new Error(data?.message || 'Không thể tải file PDF');
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mindlog-session-brief-${id}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }
+
+  async getAppointmentBrief(appointmentId: string): Promise<import('../types/brief').CounselorBriefResponse> {
+    const res = await fetch(`${API_BASE_URL}/appointments/${appointmentId}/brief`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse<import('../types/brief').CounselorBriefResponse>(res);
+  }
 }
 
 export const api = new ApiClient();

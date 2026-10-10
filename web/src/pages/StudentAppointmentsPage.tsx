@@ -15,9 +15,16 @@ import {
   PhoneCall,
   RefreshCw,
   ShieldAlert,
-  Wind
+  Wind,
+  FileText,
+  Download,
+  Trash2,
+  Eye,
+  X,
+  ShieldCheck,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { SessionBrief } from '../types/brief';
 
 export const StudentAppointmentsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'appointments' | 'resources'>('appointments');
@@ -30,6 +37,11 @@ export const StudentAppointmentsPage: React.FC = () => {
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingSuccess, setBookingSuccess] = useState<string | null>(null);
 
+  // Briefs map state
+  const [briefsMap, setBriefsMap] = useState<Record<string, SessionBrief>>({});
+  const [viewingBrief, setViewingBrief] = useState<SessionBrief | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+
   // Booking Form fields
   const [selectedCounselorId, setSelectedCounselorId] = useState('');
   const [appointmentDate, setAppointmentDate] = useState('');
@@ -41,6 +53,7 @@ export const StudentAppointmentsPage: React.FC = () => {
   const [loadingResources, setLoadingResources] = useState(true);
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
 
+
   const fetchAppointmentsData = async () => {
     try {
       setLoadingAppointments(true);
@@ -50,6 +63,20 @@ export const StudentAppointmentsPage: React.FC = () => {
       ]);
       setAppointments(appts);
       setCounselors(cList);
+      
+      const serverBriefs: Record<string, SessionBrief> = {};
+      appts.forEach((a) => {
+        if (a.sessionBrief) {
+          serverBriefs[a.id] = a.sessionBrief;
+        }
+      });
+      try {
+        const stored = JSON.parse(localStorage.getItem('mindlog_user_briefs') || '{}');
+        setBriefsMap({ ...stored, ...serverBriefs });
+      } catch (e) {
+        setBriefsMap(serverBriefs);
+      }
+
       if (cList.length > 0 && !selectedCounselorId) {
         setSelectedCounselorId(cList[0].id);
       }
@@ -57,6 +84,37 @@ export const StudentAppointmentsPage: React.FC = () => {
       console.error('Lỗi khi tải lịch hẹn:', err);
     } finally {
       setLoadingAppointments(false);
+    }
+  };
+
+  const handleRevokeBrief = async (briefId: string, appointmentId: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn thu hồi bản tóm tắt này? Chuyên viên sẽ bị chặn truy cập ngay lập tức.')) {
+      return;
+    }
+    try {
+      setRevokingId(briefId);
+      await api.revokeBrief(briefId);
+      // Cập nhật localStorage
+      const stored = JSON.parse(localStorage.getItem('mindlog_user_briefs') || '{}');
+      delete stored[appointmentId];
+      localStorage.setItem('mindlog_user_briefs', JSON.stringify(stored));
+      setBriefsMap(stored);
+      if (viewingBrief?.id === briefId) {
+        setViewingBrief(null);
+      }
+      alert('Đã thu hồi bản tóm tắt tư vấn thành công.');
+    } catch (err: any) {
+      alert(err?.message || 'Không thể thu hồi tóm tắt');
+    } finally {
+      setRevokingId(null);
+    }
+  };
+
+  const handleDownloadPdf = async (briefId: string) => {
+    try {
+      await api.downloadBriefPdf(briefId);
+    } catch (err: any) {
+      alert(err?.message || 'Không thể tải file PDF');
     }
   };
 
@@ -400,6 +458,89 @@ export const StudentAppointmentsPage: React.FC = () => {
                             </div>
                           )}
 
+                          {/* Khối Session Brief */}
+                          {briefsMap[appt.id] && !briefsMap[appt.id].revokedAt ? (
+                            <div
+                              style={{
+                                marginTop: '4px',
+                                padding: '10px 14px',
+                                background: 'rgba(52, 211, 153, 0.08)',
+                                border: '1px solid rgba(52, 211, 153, 0.25)',
+                                borderRadius: 'var(--radius-sm)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                flexWrap: 'wrap',
+                                gap: '8px',
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: '#a7f3d0' }}>
+                                <ShieldCheck size={16} color="#34d399" />
+                                <span>
+                                  <strong>Đã gắn tóm tắt</strong> • Hết hạn:{' '}
+                                  {new Date(briefsMap[appt.id].expiresAt).toLocaleDateString('vi-VN')}
+                                </span>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => setViewingBrief(briefsMap[appt.id])}
+                                  className="btn btn-secondary"
+                                  style={{ padding: '4px 10px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  <Eye size={13} /> Xem
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDownloadPdf(briefsMap[appt.id].id)}
+                                  className="btn btn-secondary"
+                                  style={{ padding: '4px 10px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  <Download size={13} /> PDF
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={revokingId === briefsMap[appt.id].id}
+                                  onClick={() => handleRevokeBrief(briefsMap[appt.id].id, appt.id)}
+                                  className="btn"
+                                  style={{
+                                    padding: '4px 10px',
+                                    fontSize: '0.78rem',
+                                    background: 'rgba(239, 68, 68, 0.15)',
+                                    color: '#f87171',
+                                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                  }}
+                                >
+                                  <Trash2 size={13} /> Thu hồi
+                                </button>
+                              </div>
+                            </div>
+                          ) : appt.status !== 'CANCELLED' ? (
+                            <div style={{ marginTop: '4px' }}>
+                              <Link
+                                to={`/student/appointments/prepare?appointmentId=${appt.id}`}
+                                className="btn"
+                                style={{
+                                  padding: '6px 12px',
+                                  fontSize: '0.82rem',
+                                  background: 'rgba(99, 102, 241, 0.15)',
+                                  border: '1px solid rgba(99, 102, 241, 0.3)',
+                                  color: '#a5b4fc',
+                                  fontWeight: 600,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                }}
+                              >
+                                <FileText size={14} /> Chuẩn bị buổi tư vấn
+                              </Link>
+                            </div>
+                          ) : null}
+
                           {appt.status !== 'CANCELLED' && isUpcoming && (
                             <div style={{ textAlign: 'right', marginTop: '4px' }}>
                               <button
@@ -523,6 +664,157 @@ export const StudentAppointmentsPage: React.FC = () => {
               </div>
             )}
 
+          </div>
+        )}
+
+        {/* Modal xem tóm tắt tư vấn */}
+        {viewingBrief && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.75)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              padding: '20px',
+            }}
+          >
+            <div
+              className="card"
+              style={{
+                width: '100%',
+                maxWidth: '720px',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                padding: '28px',
+                background: '#0f172a',
+                border: '1px solid var(--border-glass)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '18px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <FileText size={22} color="#818cf8" />
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: '#f8fafc' }}>
+                    Chi tiết Bản tóm tắt tư vấn
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setViewingBrief(null)}
+                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ padding: '12px 16px', background: 'rgba(52, 211, 153, 0.08)', border: '1px solid rgba(52, 211, 153, 0.25)', borderRadius: '8px', fontSize: '0.85rem', color: '#a7f3d0' }}>
+                • Dữ liệu do bạn chọn chia sẻ • Hết hạn vào: {new Date(viewingBrief.expiresAt).toLocaleString('vi-VN')}
+              </div>
+
+              {viewingBrief.userNote && (
+                <div style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#818cf8', marginBottom: '6px' }}>
+                    Điều bạn đã chia sẻ trước:
+                  </div>
+                  <div style={{ fontSize: '0.88rem', color: '#f8fafc', whiteSpace: 'pre-line' }}>
+                    {viewingBrief.userNote}
+                  </div>
+                </div>
+              )}
+
+              {/* Các mục trong snapshot */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {viewingBrief.snapshot?.trend && (
+                  <div style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#38bdf8', marginBottom: '6px' }}>
+                      Xu hướng cảm xúc ({viewingBrief.snapshot.rangeDays} ngày):
+                    </div>
+                    <div style={{ fontSize: '0.86rem', color: '#cbd5e1' }}>
+                      Điểm tích cực TB: {viewingBrief.snapshot.trend.avgPositiveScore}% | Tiêu cực TB: {viewingBrief.snapshot.trend.avgNegativeScore}% | Chủ đạo: {viewingBrief.snapshot.trend.dominantEmotion} ({viewingBrief.snapshot.trend.totalCheckIns} phiên)
+                    </div>
+                  </div>
+                )}
+
+                {viewingBrief.snapshot?.negativeDays && (
+                  <div style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f59e0b', marginBottom: '6px' }}>
+                      Mức độ căng thẳng:
+                    </div>
+                    <div style={{ fontSize: '0.86rem', color: '#cbd5e1' }}>
+                      {viewingBrief.snapshot.negativeDays.description}
+                    </div>
+                  </div>
+                )}
+
+                {viewingBrief.snapshot?.difficultHours && (
+                  <div style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#a855f7', marginBottom: '6px' }}>
+                      Khung giờ căng thẳng nhất:
+                    </div>
+                    <div style={{ fontSize: '0.86rem', color: '#cbd5e1' }}>
+                      {viewingBrief.snapshot.difficultHours.mostDifficultSlot}
+                    </div>
+                  </div>
+                )}
+
+                {viewingBrief.snapshot?.activities && (
+                  <div style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#34d399', marginBottom: '6px' }}>
+                      Hoạt động đã hoàn thành ({viewingBrief.snapshot.activities.totalCompleted}):
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.84rem', color: '#cbd5e1' }}>
+                      {viewingBrief.snapshot.activities.items.slice(0, 5).map((a, i) => (
+                        <div key={i}>• [{a.completedDate}] {a.title} ({a.category})</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {viewingBrief.snapshot?.journalNotes && viewingBrief.snapshot.journalNotes.length > 0 && (
+                  <div style={{ padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#ec4899', marginBottom: '6px' }}>
+                      Trích đoạn nhật ký:
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.84rem', color: '#cbd5e1' }}>
+                      {viewingBrief.snapshot.journalNotes.slice(0, 3).map((j, i) => (
+                        <div key={i}>
+                          <span style={{ color: '#94a3b8' }}>[{j.date} - Tâm trạng {j.mood}/5]:</span> &quot;{j.noteSnippet}&quot;
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ fontSize: '0.78rem', color: '#64748b', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '10px' }}>
+                * Miễn trừ trách nhiệm: Tài liệu hỗ trợ trao đổi, không phải kết luận hay chẩn đoán y tế.
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadPdf(viewingBrief.id)}
+                  className="btn btn-primary"
+                  style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Download size={15} /> Tải PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewingBrief(null)}
+                  className="btn btn-secondary"
+                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
